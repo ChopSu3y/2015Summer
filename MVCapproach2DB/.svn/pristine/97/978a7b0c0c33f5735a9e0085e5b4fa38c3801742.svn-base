@@ -1,0 +1,137 @@
+<!-- <%@ page import="com.xerox.isp.volumereports.VolumeReportBeanLocal" %> -->
+
+
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+	pageEncoding="ISO-8859-1"%>
+
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="NewFile.css">
+
+
+<!--Load the AJAX API-->
+<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+
+<script src="jquery-1.11.3.js"></script>
+<script src="first_javascript.js"></script>
+
+<script type="text/javascript">  
+      // Global variable to hold data  
+      // Load the Visualization API and the piechart package.  
+      google.load('visualization', '1', { packages: ['corechart'] });  
+</script>
+
+
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>First Report!</title>
+</head>
+<body>
+
+	<div id="chart_div" style="width: 900px; height: 280px;"></div>
+	<h1>
+		<c:out value="${text}" />
+	</h1>
+
+
+
+	<form action="DataBaseServlet" method="get">
+		<p></p>
+		Solution<span><strong>:</strong></span> <select id="solution_param"
+			name="solution_param" style="max-width: 90%">
+			<option value="">Please select a solution_id</option>
+			<c:forEach items="${report1bean.solution_id_list}" var="UniqueList">
+				<option value="${UniqueList}">${UniqueList}</option>
+			</c:forEach>
+		</select>
+		<div id="loading-solution-click">
+			<img src="loading.gif" />
+		</div>
+
+
+		<p></p>
+		Component<span><strong>:</strong></span> <select id="component_param"
+			name="component_param" style="max-width: 90%">
+			<option value="">Please select a component_id</option>
+
+		</select>
+		<div id="loading-component-click">
+			<img src="loading.gif" />
+		</div>
+
+		<!-- 
+		Component_id <select id="component_param" name="component_param"
+			style="max-width: 90%">
+			<c:forEach items="${report1bean.component_id_list}"
+				var="SecondParamList">
+				<option value="${SecondParamList}">${SecondParamList}</option>
+			</c:forEach>
+		</select>
+		
+		
+		-->
+		<p></p>
+		Start Year<span><strong>:</strong></span> <select id="yearparam_start"
+			name="yearparam_start" style="max-width: 90%">
+			<option value="">Please select a year</option>
+		</select>
+		<div id="loading-year-click">
+			<img src="loading.gif" />
+		</div>
+
+		<p></p>
+		Start Month<span><strong>:</strong></span> <select
+			id="monthparam_start" name="monthparam_start" style="mGax-width: 90%">
+			<option value="">Please select a month</option>
+		</select> <input type="submit" name="FIRST" value="Submit" id="submit_first" />
+
+	</form>
+
+
+
+	<c:if test="${report1bean.print}">
+		<h3>Bad SQL Request! Try again!</h3>
+	</c:if>
+
+	<c:if test="${report1bean.display}">
+		<h3>The Results</h3>
+		<table border=1 cellpadding=5>
+			<tr>
+				<td>SOLUTION_ID</td>
+				<td>COMPONENT_ID</td>
+				<td>MONTH</td>
+				<td>REQUEST_COUNT</td>
+			</tr>
+
+			<c:forEach items="${report1bean.reportOneList}" var="BigListITT">
+				<tr>
+					<td><c:out value="${BigListITT.SOLUTION_ID}" /></td>
+					<td><c:out value="${BigListITT.COMPONENT_ID}" /></td>
+					<td><c:out value="${BigListITT.DATE}" /></td>
+					<td><c:out value="${BigListITT.REQUEST_COUNT}" /></td>
+				</tr>
+			</c:forEach>
+
+		</table>
+	</c:if>
+	<div id="chartdiv" style="width: 600px; height: 350px;"></div>
+	<!--  
+	<p>
+		<a href="http://www.google.com/">
+			<button>Visit Google</button>
+		</a>
+	</p>
+-->
+
+	<p></p>
+	<form action="DataBaseServlet" method="post">
+		<input type="submit" name="SECOND" value="Click for Report 2"></input>
+	</form>
+
+
+	<input type="submit" name="Google" value="Google" id="Google" />
+
+
+</body>
+</html>

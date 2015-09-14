@@ -1,0 +1,296 @@
+//The following variables are declared so that it is easier to switch domains (which is needed for our ajax calls to our rest service)
+var local_url = "http://localhost:8080/AjaxController/AjaxController/";	 
+var xerox_url = "http://usa0300lv312.apps.mc.xerox.com:8080/AjaxController/AjaxController/";
+var replace_url = local_url; //Pick local_url or xerox_url 
+//Don't forget to change SUBMIT 2 button in here at the bottom
+
+$(document).ready(function() {
+	loadSolutionList();//load the solution list on start up
+	$('#loading-component-click').hide(); //We are just hiding the loading animations that are underneath (component, start year,)
+	$('#loading-year-click').hide();
+	//the loading animation for the solution is hidden in the function loadSolutionList()
+
+	$('#solution_param').change(function() { //this will update the component_id
+		update_comp();
+	});
+	
+	$('#component_param').change(function() { //this will update the month and year date
+		update_year();
+	});
+	
+	$('#yearparam_start').change(function() { //this will update the month
+		update_month();
+	});
+
+	$('#monthparam_start').change(function() { //this is used to check whether or not all 4 parameters have been chosen
+		if (verifyAdSettings()) { //if all 4 options have been chosen
+			// console.log("before the call to displayloadingmessage");
+			DisplayLoadingMessage();
+			return;
+		} 
+			// console.log("Not displaying google charts");
+	});
+
+	$('#Submit2').click(function() {
+		// window.location = "http://localhost:8080/MVCapproach2DB/Second.jsp";
+		window.location = "http://usa0300lv312.apps.mc.xerox.com:8080/MVCapproach2DB/Second.jsp";
+	});
+
+
+});// end of $(document).ready(function() {
+
+
+function DisplayLoadingMessage() {
+	// console.log("DisplayingLoadingMessage");
+	$.blockUI({ //using the iPhoto blocker from blockUI
+		css: {
+			border: 'none',
+			padding: '15px',
+			backgroundColor: '#000',
+			'-webkit-border-radius': '10px',
+			'-moz-border-radius': '10px',
+			opacity: .9,
+			color: '#fff'
+		}
+	});
+	GoogleChart();
+	setTimeout($.unblockUI, 300);
+	return;
+}
+
+	function GoogleChart() {
+		var solution = $('#solution_param').val();
+		var component = $('#component_param').val();
+		var year = $('#yearparam_start').val();
+		var month = $('#monthparam_start').val();
+
+		var temp_url = replace_url;
+		temp_url += "Report1/";
+	
+		temp_url += solution + "/";
+		temp_url += component + "/";
+		temp_url += year + "/";
+		temp_url += month;
+
+
+		$.ajax({
+			type: 'GET',
+			dataType: 'json',
+			url: temp_url,
+			success: function(response) {
+				drawchart(response); // calling method  
+			},
+			error: function() {
+				alert("Error loading data! Please try again.");
+			}
+		});
+	}
+
+
+
+
+
+	function drawchart(dataValues) {
+		// Callback that creates and populates a data table,  
+		// instantiates the pie chart, passes in the data and  
+		// draws it.  
+		var data = new google.visualization.DataTable();
+
+		data.addColumn('string', 'Date');
+		data.addColumn('number', 'Request_Count');
+
+		$.each(dataValues, function(k, v) {
+			data.addRow([dataValues[k].DATE, parseInt(dataValues[k].REQUEST_COUNT, 10)]);
+		});
+		
+		// Instantiate and draw our chart, passing in some options  
+		var chart = new google.visualization.ColumnChart(document.getElementById('chartdiv'));
+
+		var options = {
+			chartArea:{left:80,top:10,width:'80%',height:'80%'},
+			'title': 'Request Count by Date',
+			hAxis: {
+				title: 'Date'
+			},
+			vAxis: {
+				textPosition: 'in',
+				logScale: true,
+				title: 'Request Count',
+				minValue: 0
+			},
+			animation: {
+				easing: 'in',
+				startup: true
+			},
+			legend: {
+				position: 'bottom',
+			}
+		};
+
+		chart.draw(data, options);
+	}
+
+
+	function update_comp() { //changed solution id, to update component param
+		var solution = $('#solution_param').val();
+
+		var $cp = $('#component_param');
+		$cp.empty(); //clear out the select options
+		$('#monthparam_start').empty();
+		$('#yearparam_start').empty();
+
+		var temp_url = replace_url;
+		temp_url += "GenerateComponentList";
+		temp_url += "/";
+		temp_url += solution;
+
+		$.ajax({
+			url: temp_url,
+			beforeSend: function() {
+				$('#loading-solution-click').show();
+			},
+			type: 'GET',
+			dataType: 'json',
+			success: function(order) {
+				if (jQuery.isEmptyObject(order)) { //returns true if it is empty
+					$cp.append(new Option("No options", ""));
+					$('#yearparam_start').empty();
+					$('#monthparam_start').empty();
+					$('#yearparam_start').append(new Option("No options", ""));
+					$('#monthparam_start').append(new Option("No options", ""));
+				} else {
+					$cp.append(new Option("Please select an option", ""));
+					$.each(order, function(key, value) {
+						$cp.append($('<option>', {
+							value: value
+						}).text(value));
+					});
+				} //end of else
+			}, //end of success
+			complete: function() {
+				$('#loading-solution-click').hide();
+			}
+		});
+		return false;
+	}
+
+	function update_year() { //this is helper function for when component param changes, update months and year
+
+		var solution1 = $('#solution_param').val();
+		var component1 = $('#component_param').val();
+		var $start_year = $('#yearparam_start');
+
+		var temp_url = replace_url;
+		temp_url += "GenerateYearList";
+		temp_url += "/";
+		temp_url += solution1;
+		temp_url += "/";
+		temp_url += component1;
+
+		$start_year.empty(); //clear out the year options
+		$('#monthparam_start').empty(); //clear out the month options
+
+		$.ajax({
+			url: temp_url,
+			beforeSend: function() {
+				$('#loading-component-click').show(); //used to show the loading icon
+			},
+			type: 'GET',
+			dataType: 'json',
+
+			success: function(order) {
+				if (jQuery.isEmptyObject(order)) { //checks to see whether there are valid years
+					$('#yearparam_start').append(new Option("No options", ""));
+					$('#monthparam_start').append(new Option("No options", ""));
+				} else { //there are valid years!!
+					$start_year.append(new Option("Please select an option", ""));
+					$.each(order, function(key, value) {
+						$start_year.append($('<option>', {
+							value: value
+						}).text(value));
+					});
+				} //end of else
+			}, //end of success
+			complete: function() {
+				$('#loading-component-click').hide(); //hide the loading element
+			}
+		});
+		return false;
+	}
+
+
+	//update month, similar to the one above
+	function update_month() { //this is helper function for when component param changes, update months and year
+
+		var solution2 = $('#solution_param').val();
+		var component2 = $('#component_param').val();
+		var start_year2 = $('#yearparam_start').val();
+
+		var temp_url = replace_url;
+		temp_url += "GenerateMonthList";
+		temp_url += "/" + solution2;
+		temp_url += "/" + component2;
+		temp_url += "/" + start_year2;
+
+		var $month = $('#monthparam_start');
+		$month.empty(); //clear out the year options
+
+		$.ajax({
+			//			url: "SecondColumn",
+			url: temp_url,
+			beforeSend: function() {
+				$('#loading-year-click').show();
+			},
+			type: 'GET',
+			dataType: 'json',
+
+			success: function(order) {
+				$month.append(new Option("Please select an option", ""));
+				$.each(order, function(key, value) {
+					$month.append($('<option>', {
+						value: value
+					}).text(value));
+				});
+			},
+			complete: function() {
+				$('#loading-year-click').hide();
+			}
+		});
+		return false;
+	}
+
+	function verifyAdSettings() { //checks to see whether or not the options are NULL
+		if ($('#solution_param').val() != null && $('#component_param').val() != null && $('#monthparam_start').val() != null && $('#yearparam_start').val() != null
+
+			&& $('#solution_param').val() != "" && $('#component_param').val() != "" && $('#monthparam_start').val() != "" && $('#yearparam_start').val() != ""
+		) {
+			return true;
+		}
+		return false;
+	}
+
+	function loadSolutionList() {
+		var temp_url = replace_url + "GenerateSolutionList" ;
+		var $sp = $('#solution_param');
+
+		$.ajax({
+
+			beforeSend: function() {
+				$('#loading-solution-click').show();
+			},
+			url: temp_url, 
+			type: 'GET',
+			dataType: 'json',
+			success: function(order) {
+				$sp.append(new Option("Please select an option", ""));
+				$.each(order, function(key, value) {
+					$sp.append($('<option>', {
+						value: value
+					}).text(value));
+				});
+			},
+			complete: function() {
+				$('#loading-solution-click').hide();
+			}
+		});
+	}

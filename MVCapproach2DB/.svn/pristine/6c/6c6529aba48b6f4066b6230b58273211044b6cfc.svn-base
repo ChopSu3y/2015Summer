@@ -1,0 +1,126 @@
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+pageEncoding="ISO-8859-1"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+	<link rel="stylesheet" type="text/css" href="NewFile.css">
+	
+
+	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+
+	<script src="jquery-1.11.3.js"></script>
+	<script src="second_javascript.js"></script>
+
+	<script type="text/javascript">  
+      // Global variable to hold data  
+      // Load the Visualization API and the piechart package.  
+      
+      google.load('visualization', '1', { packages: ['corechart'] });//this is for the bar chart
+     // google.load('visualization', '1.1', {packages:['table']});//this is for the table
+      //google.setOnLoadCallback(drawTable);//this is supposed to be for the table, but didn't use
+      </script>
+
+      <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+      <title>Second Report!</title>
+  </head>
+  <body>
+
+  	<h1>Second Report!</h1>
+  	
+
+  		<p> </p> Solution <span><strong>:</strong></span>
+  		<select name="solution_param" id="solution_param" style="max-width: 90%">
+		<!-- 
+			<c:forEach items="${report2bean.solution_id_list}" var="UniqueList">
+			<option value="${UniqueList}">${UniqueList}</option>
+		</c:forEach>
+		!-->
+	</select> 
+	<div id="loading-solution-click">
+		<img src="loading.gif" />
+	</div>
+	
+	<p></p>
+	
+	Start Year<span><strong>:</strong></span>
+	<select name="yearparam_start" id="yearparam_start" style="max-width: 90%">
+<!-- 
+	<c:forEach items="${report2bean.yearList}" var="FourthParamList">
+	<option value="${FourthParamList}">${FourthParamList}</option>
+</c:forEach>
+!-->
+</select>
+
+<div id="loading-start_year-click">
+	<img src="loading.gif" />
+</div>
+
+<p></p>
+Start Month<span><strong>:</strong></span>
+<select name="monthparam_start" id="monthparam_start" style="max-width: 90%">
+		<!-- 
+		<c:forEach items="${report2bean.monthList}" var="ThirdParamList">
+		<option value="${ThirdParamList}">${ThirdParamList}</option>
+	</c:forEach>
+	!-->
+</select>
+<div id="loading-start_month-click">
+	<img src="loading.gif" />
+</div>	
+
+<p></p> End Year<span><strong>:</strong></span>
+<select name="yearparam_end" id="yearparam_end" style="max-width: 90%">
+<!-- 
+	<c:forEach items="${report2bean.yearList}" var="SixthParamList">
+	<option value="${SixthParamList}">${SixthParamList}</option>
+</c:forEach>
+!-->
+</select> 
+<div id="loading-end_year-click">
+	<img src="loading.gif" />
+</div>
+
+
+<p></p>
+End Month<span><strong>:</strong></span>
+<select name="monthparam_end" id="monthparam_end" style="max-width: 90%">
+<!-- 
+	<c:forEach items="${report2bean.monthList}" var="FifthParamList">
+	<option value="${FifthParamList}">${FifthParamList}</option>
+</c:forEach>
+!-->
+</select>
+<div id="loading-end_month-click">
+	<img src="loading.gif" />
+</div>	
+
+<p></p>
+
+
+
+
+
+
+
+<p> </p>
+
+<!--
+<form action="DataBaseServlet" method="post">
+	<input type="submit" name="FIRST" value="Click for Report 1"></input>
+</form>
+!-->
+
+<input type="submit" name="Submit1" value="Report1" id="Submit1" />
+
+
+<!--
+<input type="submit" name="Google" value="Google" id="Google" />
+!-->
+
+<div id="chartdiv" resize:both style="width: 600px; height: 350px;"></div>
+
+
+</body>
+</html>

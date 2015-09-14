@@ -1,0 +1,166 @@
+/*
+$(function() {
+	console.log( "ready!" );
+
+	var solution_param;
+	$( "#solution_param" ).change(function() {
+		solution_param = $(this).val();
+		alert( "You selected " + solution_param );
+	}); 
+});
+*/
+
+$(document).ready(function(){
+
+	$('#loading-component-click').hide();//underneath component
+	$('#loading-year-click').hide();
+	$('#loading-solution-click').hide();//underneath solution
+
+	
+	
+	$('#solution_param').change(function(){
+		var solution = $('#solution_param').val();
+		console.log("solution param is:" + solution);
+		//alert("You have changed solution_id");
+		
+		var $cp = $('#component_param');
+		console.log("clearing out component param list");
+		$cp.empty();//clear out the select options
+		
+		$.ajax({
+			url: "SecondColumn",
+			beforeSend: function(){
+				$('#loading-solution-click').show();
+			},
+			type: 'GET',
+	        contentType: "application/json; charset=utf-8",
+			dataType: 'json',
+			data: {'solution' : solution},
+			success: function(order){
+//				if(order.isValid){
+				//you should have an if statement RIGHT HERE
+					//alert("Displaying component_ids");
+					$cp.append("<option> Please select an option </option");
+					$.each(order, function(key, value) {   
+							$('#component_param')
+							.append($('<option>', { value : key })
+							.text(value)); 
+					});
+//				}
+//				else{
+				//	alert('Please enter a valid username!!');
+//				}
+			},
+			complete: function() {
+				$('#loading-solution-click').hide();
+			}
+		});
+		return false;
+	});
+
+
+	function update_year(){//this is helper function for when component param changes, update months and year
+		console.log("You've changed component_param");
+
+		var solution1 = $('#solution_param').val();
+		var component1 = $('#component_param').val();
+
+		var $start_year = $('#yearparam_start');
+		$start_year.empty();//clear out the year options
+		$('#monthparam_start').empty();
+
+	
+		
+		
+		$.ajax({
+			url: "SecondColumn",
+			beforeSend: function(){
+				$('#loading-component-click').show();
+			},
+			type: 'GET',
+	        contentType: "application/json; charset=utf-8",
+			dataType: 'json',
+			data: {'solution' : solution1, 'component' : component1, 'update_year' : "yes"},
+
+			success: function(order){
+					$('#yearparam_start').append("<option> Please select an option </option>");
+					$('#monthparam_start').append("<option> Please select an option </option>");
+
+					$.each(order, function(key, value) {   
+							$('#yearparam_start')
+							.append($('<option>', { value : key })
+							.text(value)); 
+					});
+			},
+			complete: function() {
+				$('#loading-component-click').hide();
+			}
+		});
+		return false;
+	}
+
+	
+	//update month, similar to the one above
+	function update_month(){//this is helper function for when component param changes, update months and year
+		console.log("You've changed start year");
+
+		var solution2 = $('#solution_param').val();
+		var component2 = $('#component_param').val();
+		var start_year2 = $('#yearparam_start').val();
+
+		var $start_month2 = $('#monthparam_start');
+		$start_month2.empty();//clear out the year options
+		
+		$.ajax({
+			url: "SecondColumn",
+			beforeSend: function(){
+				$('#loading-year-click').show();
+			},
+			type: 'GET',
+	        contentType: "application/json; charset=utf-8",
+			dataType: 'json',
+			data: {'solution' : solution2, 'component' : component2, 'start_year' : start_year2, 'update_month' : "yes"},
+
+			success: function(order){
+					$('#monthparam_start').append("<option> Please select an option </option>");
+					$.each(order, function(key, value) {   
+							$('#monthparam_start')
+							.append($('<option>', { value : value })
+							.text(value)); 
+					});
+			},
+			complete: function() {
+				$('#loading-year-click').hide();
+			}
+		});
+		return false;
+	}
+	
+	
+
+	$('#component_param').change(function(){//this will update the month and year date
+		update_year();
+//		update_month();
+	});
+	
+
+	$('#yearparam_start').change(function(){//this will update the month
+		update_month();
+	});
+
+	
+/*	
+	$(document).ajaxStart(function() {//this is for the loading image to show/hide
+	    $loading.show();
+
+	}).ajaxStop(function() {
+
+	    $loading.hide();
+	});
+	*/
+});
+
+
+
+
+

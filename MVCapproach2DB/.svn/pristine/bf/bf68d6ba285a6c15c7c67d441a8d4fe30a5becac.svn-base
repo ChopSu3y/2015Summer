@@ -1,0 +1,326 @@
+package servletBean;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.DriverManager;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+//import java.sql.SQLException;
+import java.sql.Statement;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.lang.String;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+public class DataBaseServlet extends HttpServlet {
+
+	public DataBaseServlet() {
+		// TODO Auto-generated constructor stub
+	}
+
+	//private String message;
+
+	public void init() throws ServletException {
+
+	}
+
+	public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+		String temp = "Welcome to the Solution Statistics viewer!";
+		request.setAttribute("text", temp);
+
+		String solution_id = request.getParameter("param1");
+		String component_id = request.getParameter("param2");
+
+		String month = request.getParameter("monthparam");
+		String year = request.getParameter("yearparam");
+
+		String month_end = request.getParameter("monthparam_end");
+		String year_end = request.getParameter("yearparam_end");
+
+		String first_submit = request.getParameter("FIRST");
+	//	System.out.print("First Submit is:" + first_submit);
+		String second_submit = request.getParameter("SECOND");
+	//	System.out.print("Second Submit is:" + second_submit);
+		
+		
+		//beginning of processing the display information for 2nd web page
+		if (second_submit != null) {//we are going to the second web page
+				System.out.println("We are at the second page!!");
+
+			try {
+				//	Class.forName("oracle.jdbc.driver.OracleDriver");
+				//	Connection conn = DriverManager.getConnection("jdbc:oracle:thin:@usa0300lv1194.na.xerox.net:1542/ISPSVC","ispauditdev", "Ei6C#Cr4zPwRule");
+				Connection conne = DriverManager.getConnection("jdbc:oracle:thin:@usa7061lv1137.na.xerox.net:1532/ISPSVC", "ispaudit", "ISPu$a0300lvStg");
+				Statement stmt = conne.createStatement();
+				ResultSet rs;
+				
+				if (solution_id != null) {
+					String StartDate = TurnToNiceDate(month, year);
+					String EndDate = TurnToNiceDateEnd(month_end, year_end);
+					
+					String DaQuery = CreateSqlQueryReport2(solution_id, StartDate, EndDate);
+					rs = stmt.executeQuery(DaQuery);
+
+					ArrayList<ReportOne> BigList = new ArrayList<ReportOne>();//creating a place to store the results of query
+
+					while (rs.next()) {
+						ReportOne tempReportOne = new ReportOne();
+						tempReportOne.setSOLUTION_ID(rs.getString(1));
+						tempReportOne.setDATE(rs.getString(2));
+						tempReportOne.setREQUEST_COUNT(rs.getString(3));
+						BigList.add(tempReportOne);
+					}
+					request.setAttribute("BigList", BigList);//sending the BigList to the object
+					
+				}
+
+				//grabbing the unique column values
+				String second_sql = "select distinct(SOLUTION_ID) from AUDIT_METRIC ";
+				request.setAttribute("Unique", GrabDistinctForColumns(second_sql, stmt));
+
+				second_sql = "select distinct(COMPONENT_ID) from AUDIT_METRIC";
+				request.setAttribute("SecondParam", GrabDistinctForColumns(second_sql, stmt));//add this to the request object
+
+				ArrayList<String> MonthList = new ArrayList<String>();
+				MonthList = MakeMonths();
+				request.setAttribute("MonthList", MonthList);
+				request.setAttribute("MonthList_end", MonthList);
+
+				ArrayList<String> YearList = new ArrayList<String>();
+				YearList = MakeYears();
+				request.setAttribute("YearList", YearList);
+				request.setAttribute("YearList_end", YearList);
+				// end of grabbing the unique column values
+
+				conne.close();//closes the connection
+				RequestDispatcher rd = request.getRequestDispatcher("Second.jsp");
+				System.out.print("Forwarding to the second page");
+				rd.forward(request, response);
+				return;
+			}
+
+			catch (SQLException e) {
+				e.printStackTrace();
+			}
+
+		}
+		
+	
+		/*
+		//beginning of processing the display information for 1st web page
+		solution_id = request.getParameter("param1");
+//		System.out.print(solution_id);
+		 component_id = request.getParameter("param2");
+//		System.out.print(component_id);
+		 month = request.getParameter("monthparam");
+//		System.out.print(month);
+		 year = request.getParameter("yearparam");
+//		System.out.print(year);
+ */
+
+		String NiceDate = TurnToNiceDate(month, year);
+//		System.out.println("Now the nice date is:" + NiceDate);
+
+		try {
+			//	  Class.forName("oracle.jdbc.driver.OracleDriver");
+			//			  Connection conn = DriverManager.getConnection("jdbc:oracle:thin:@usa0300lv1194.na.xerox.net:1542/ISPSVC","ispauditdev", "Ei6C#Cr4zPwRule");
+			Connection conn = DriverManager.getConnection("jdbc:oracle:thin:@usa7061lv1137.na.xerox.net:1532/ISPSVC", "ispaudit", "ISPu$a0300lvStg");
+			Statement stmt = conn.createStatement();
+
+			ResultSet rs;
+			if (solution_id != null) {//that means that OPTIONS have been selected!
+				String DaQuery = CreateSqlQueryReport1(solution_id, component_id, NiceDate);
+				rs = stmt.executeQuery(DaQuery);
+
+				ArrayList<ReportOne> BigList = new ArrayList<ReportOne>();//creating a place to store the results of query
+
+				while (rs.next()) {
+					ReportOne tempReportOne = new ReportOne();
+					tempReportOne.setSOLUTION_ID(rs.getString(1));
+					tempReportOne.setCOMPONENT_ID(rs.getString(2));
+					tempReportOne.setDATE(rs.getString(3));
+					tempReportOne.setREQUEST_COUNT(rs.getString(4));
+					BigList.add(tempReportOne);
+				}
+
+				request.setAttribute("BigList", BigList);//sending the BigList to the object
+			}
+			else {
+//				System.out.println("The solution_id has not been chosen yet, so the query has not been formed");
+			}
+
+			//grabbing the solution_id and component_id for the selector bars
+			String second_sql = "select distinct(SOLUTION_ID) from AUDIT_METRIC ";
+			request.setAttribute("Unique", GrabDistinctForColumns(second_sql, stmt));
+
+			second_sql = "select distinct(COMPONENT_ID) from AUDIT_METRIC";
+			request.setAttribute("SecondParam", GrabDistinctForColumns(second_sql, stmt));
+			//end of grabbing solution_id and component_id for the selector bars
+			
+
+			//initializing the month selector bars
+			ArrayList<String> MonthList = new ArrayList<String>();
+			MonthList = MakeMonths();
+			request.setAttribute("MonthList", MonthList);
+		
+			ArrayList<String> YearList = new ArrayList<String>();
+			YearList = MakeYears();
+			request.setAttribute("YearList", YearList);
+			//end of initializing the month selector bars
+
+			conn.close();//closes the connection
+			RequestDispatcher rd = request.getRequestDispatcher("NewFile.jsp");
+			System.out.print("Going to First Page!");
+			rd.forward(request, response);
+			return;
+		}
+
+		catch (SQLException e) {
+			e.printStackTrace();
+		}
+
+		// Set response content type
+		//     response.setContentType("text/html");
+
+		// Actual logic goes here.
+		//	      PrintWriter out = response.getWriter();
+		//	      out.println("<h1>" + message + "</h1>");*/
+
+	}
+
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		doGet(request, response);
+	}
+
+	public void destroy() {
+		// do nothing.
+	}
+
+	public ArrayList<String> MakeMonths() {
+		ArrayList<String> tempArrayList = new ArrayList<String>();
+		tempArrayList.add("JAN");
+		tempArrayList.add("FEB");
+		tempArrayList.add("MAR");
+		tempArrayList.add("APR");
+		tempArrayList.add("MAY");
+		tempArrayList.add("JUN");
+		tempArrayList.add("JUL");
+		tempArrayList.add("AUG");
+		tempArrayList.add("SEP");
+		tempArrayList.add("OCT");
+		tempArrayList.add("NOV");
+		tempArrayList.add("DEC");
+
+		return tempArrayList;
+	}
+
+	public ArrayList<String> MakeYears() {
+		ArrayList<String> tempArrayList = new ArrayList<String>();
+		tempArrayList.add("2010");
+		tempArrayList.add("2011");
+		tempArrayList.add("2012");
+		tempArrayList.add("2013");
+		tempArrayList.add("2014");
+		tempArrayList.add("2015");
+
+		return tempArrayList;
+	}
+
+	public String TurnToNiceDate(String month, String year) {
+		// Given a month and year, it will turn into this format, ex:
+		// '01-JAN-2015'
+		String NiceDate = "'01-";
+		NiceDate += month;
+		NiceDate += "-";
+		NiceDate += year;
+		NiceDate += "'";
+		return NiceDate;
+	}
+	
+	public String TurnToNiceDateEnd(String month, String year) {
+		// Given a month and year, it will turn into this format, ex:
+		// '01-JAN-2015'
+		String NiceDate = "'31-";
+		NiceDate += month;
+		NiceDate += "-";
+		NiceDate += year;
+		NiceDate += "'";
+		return NiceDate;
+	}
+
+
+	public String CreateSqlQueryReport1(String Solution_id, String Component_id, String NiceDate) { // NiceDate is in '01-JAN-2015' format
+		/*
+		 * select SOLUTION_ID, COMPONENT_ID, to_char(METRIC_END_TIME,'yyyy-mm')
+		 * as MONTH, sum(METRIC_VALUE) as REQUEST_COUNT from AUDIT_METRIC where
+		 * METRIC_START_TIME >= '01-JAN-2015' and METRIC_END_TIME <= (SYSDATE)
+		 * and SOLUTION_ID = 'S0228_CrmInquiryServiceWeb' and COMPONENT_ID =
+		 * 'getHistory' and METRIC_NAME = 'Daily_Entry_Count' group by
+		 * SOLUTION_ID, COMPONENT_ID, to_char(METRIC_END_TIME,'yyyy-mm') order
+		 * by SOLUTION_ID, COMPONENT_ID, to_char(METRIC_END_TIME,'yyyy-mm')
+		 */
+		String SqlQuery = "select SOLUTION_ID, COMPONENT_ID, to_char(METRIC_END_TIME,'yyyy-mm') as MONTH, sum(METRIC_VALUE) as REQUEST_COUNT from AUDIT_METRIC";
+		SqlQuery += " where METRIC_START_TIME >= ";
+		SqlQuery += NiceDate;// add the start date
+		SqlQuery += " and METRIC_END_TIME <= (SYSDATE) and SOLUTION_ID = '";
+		SqlQuery += Solution_id; //add the solution id
+		SqlQuery += "' and COMPONENT_ID = '";
+		SqlQuery += Component_id; // add the component id
+		SqlQuery += "' and METRIC_NAME = 'Daily_Entry_Count' group by SOLUTION_ID, COMPONENT_ID, to_char(METRIC_END_TIME,'yyyy-mm') order by";
+		SqlQuery += " SOLUTION_ID, COMPONENT_ID, to_char(METRIC_END_TIME,'yyyy-mm')";
+		return SqlQuery;
+	}
+	
+	public String CreateSqlQueryReport2(String Solution_id, String NiceDate_start, String NiceDate_end) { // NiceDate is in '01-JAN-2015' format
+		/* REPORT TWO
+		select SOLUTION_ID, to_char(METRIC_END_TIME,'yyyy-mm') as MONTH, sum(METRIC_VALUE) as REQUEST_COUNT
+		from AUDIT_METRIC
+		where METRIC_START_TIME >= '01-JAN-2014'
+		and METRIC_END_TIME <= '31-DEC-2014'
+		and SOLUTION_ID = 'S0228_CrmInquiryServiceWeb'
+		and METRIC_NAME = 'Daily_Entry_Count'
+		group by SOLUTION_ID, to_char(METRIC_END_TIME,'yyyy-mm')
+		order by SOLUTION_ID, to_char(METRIC_END_TIME,'yyyy-mm');
+		*/
+		
+		String SqlQuery = "select SOLUTION_ID, to_char(METRIC_END_TIME,'yyyy-mm') as MONTH, sum(METRIC_VALUE) as REQUEST_COUNT from AUDIT_METRIC";
+		SqlQuery += " where METRIC_START_TIME >= ";
+		SqlQuery += NiceDate_start; // add the start date
+		SqlQuery += " and METRIC_END_TIME <= ";
+		SqlQuery += NiceDate_end; //add the end date
+		SqlQuery += " and SOLUTION_ID = '"; 	
+		SqlQuery += Solution_id; //add the solution id
+		SqlQuery += "' and METRIC_NAME = 'Daily_Entry_Count' group by SOLUTION_ID, to_char(METRIC_END_TIME,'yyyy-mm') order by";
+		SqlQuery += " SOLUTION_ID, to_char(METRIC_END_TIME,'yyyy-mm')";
+		return SqlQuery;
+	}
+
+	public ArrayList<String> GrabDistinctForColumns(String Query, Statement stmt) {
+		try {
+			ResultSet rs_loop = stmt.executeQuery(Query);
+
+			ArrayList<String> Temp = new ArrayList<String>();
+			while (rs_loop.next()) {
+				String tempString = rs_loop.getString(1);
+				if (tempString != null) {
+					Temp.add(tempString);
+				}
+			}
+			Collections.sort(Temp, String.CASE_INSENSITIVE_ORDER);
+			return Temp;
+		}
+		catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+}

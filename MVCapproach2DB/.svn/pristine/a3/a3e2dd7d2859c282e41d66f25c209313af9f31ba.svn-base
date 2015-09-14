@@ -1,0 +1,135 @@
+$(document).ready(function() {
+
+	var chart = new google.visualization.LineChart(document.getElementById('chartdiv'));	
+	$('#Submit3').click(function() {
+		
+		var temp_url = "http://localhost:8080/AjaxController/AjaxController/";
+		temp_url += "Report3";
+		chart = new google.visualization.ColumnChart(document.getElementById('chartdiv'));		
+		
+		$.ajax({
+			type: 'GET',
+			dataType: 'json',
+			url: temp_url,
+			success: function(response) {
+				console.log(response);
+				console.log("We were able to grab report 3");
+				drawchart(response);
+				console.log("We are about to print the chart");
+			},
+			error: function() {
+				alert("Error loading data! Please try again.");
+			}
+		});
+	});
+	
+$('#line').click(function() {
+		
+		var temp_url = "http://localhost:8080/AjaxController/AjaxController/";
+		temp_url += "Report3";
+		chart = new google.visualization.LineChart(document.getElementById('chartdiv'));		
+		
+		$.ajax({
+			type: 'GET',
+			dataType: 'json',
+			url: temp_url,
+			success: function(response) {
+				console.log(response);
+				console.log("We were able to grab report 3");
+				drawchart(response);
+				console.log("We are about to print the chart");
+			},
+			error: function() {
+				alert("Error loading data! Please try again.");
+			}
+		});
+	});
+	
+	
+	
+	function drawchart(dataValues) {
+		// Callback that creates and populates a data table,  
+		// instantiates the pie chart, passes in the data and  
+		// draws it.  
+		var data = new google.visualization.DataTable();
+
+//		data.addColumn('string', 'Date');
+//		data.addColumn('number', 'Request_Count');
+		
+//		 var data = google.visualization.DataTable();
+//		 data.addColumn('string', 'Fantasy&SciFi', 'Romance', 'Mystery/Crime' , 'Genreal', 'Western', 'Literature', {role: 'annotation'}  );
+		
+		data.addColumn('string', 'Date');
+		data.addColumn('number', 'Error');
+		data.addColumn('number', 'Total Requests');
+		data.addColumn({type: 'string', role: 'tooltip'});//total requests
+		/*
+		data.addRow(['2010', 400, 800]);
+		data.addRow(['2011', 300, 800]);
+		data.addRow(['2012', 500, 800]);
+	
+		data.addColumn('string', 'Date');
+		data.addColumn('number', 'Error');
+		data.addColumn('number', 'Total Requests');*/
+		
+	
+		$.each(dataValues, function(k, v) {
+//			data.addRow([dataValues[k].DATE, parseInt(dataValues[k].ERROR_COUNT), parseInt(dataValues[k].REQUEST_COUNT)]);
+			data.addRow([dataValues[k].DATE, parseInt(dataValues[k].ERROR_COUNT), 
+			              parseInt(dataValues[k].REQUEST_COUNT), 'RequestCount:' + dataValues[k].REQUEST_COUNT +'\n' + 'Error:' + dataValues[k].ERROR_COUNT,]);
+		});
+				
+		/* 
+		 arrayToDataTable([
+		                                                   ['Genre', 'Fantasy & Sci Fi', 'Romance', 'Mystery/Crime', 'General',
+		                                                    'Western', 'Literature', { role: 'annotation' } ],
+		                                                   ['2010', 10, 24, 20, 32, 18, 5, ''],
+		                                                   ['2020', 16, 22, 23, 30, 16, 9, ''],
+		                                                   ['2030', 28, 19, 29, 30, 12, 13, '']
+		                                                 ]);
+		                                                 */
+
+		 
+//		$.each(dataValues, function(k, v) {
+//			data.addRow([dataValues[k].DATE, parseInt(dataValues[k].REQUEST_COUNT, 10)]);
+//		});
+
+		// Instantiate and draw our chart, passing in some options  
+//		var chart = new google.visualization.LineChart(document.getElementById('chartdiv'));
+//		var chart = new google.visualization.ColumnChart(document.getElementById('chartdiv'));
+
+		 var options = {
+				 colors: ['#dc3912', '#3366cc'],
+//				 colors: ['#3366cc', '#dc3912'],
+				 title: 'Solution: S0228_CrmInquiryServiceWeb, Component:getHistory' +'DailyRequestCounts and DailyErrors per day (July-01-2015 to July-28-2015)',
+					titlePosition: 'in',
+					chartArea: {
+						left: 115,
+						// top: 0,
+						top: 10,
+						width: '80%',
+						// width: '100%',
+						height: '80%'
+						// height: '100%'
+					},
+//			        width: 80%,
+//			        height: 400,
+			        legend: { position: 'top', maxLines: 3 },
+			        bar: { groupWidth: '75%' },
+			        isStacked: true,
+		 };
+
+		 /*
+		var formatter = new google.visualization.NumberFormat({
+			groupingSymbol: ',',
+			fractionDigits: 0
+		});
+		formatter.format(data, 1);
+		*/
+
+		chart.draw(data, options);
+		
+	}//end of drawchart()
+	
+	
+});

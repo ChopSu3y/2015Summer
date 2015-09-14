@@ -1,0 +1,95 @@
+/**
+ * 
+ */
+
+$(document).ready(function(){
+
+	console.log("I am in the document ready function");
+	
+	$('#loading-start_year-click').hide();//underneath component
+	var $sp = $('#solution_param');
+		$.ajax({
+		
+			beforeSend: function(){
+				$('#loading-solution-click').show();
+			},
+			url: "http://localhost:8080/AjaxController/AjaxController/GenerateSolutionList",
+			type: 'GET',
+			dataType: 'json',
+			success: function(order){
+				console.log("Success!");
+				$sp.append( new Option("Please select an option", "") );
+				$.each(order, function(key, value) {   
+					$sp.append($('<option>', {value: value}).text(value));
+					/*
+						$('#solution_param')
+						.append($('<option>', { value : value })
+						.text(value)); 
+						*/
+				});
+			},
+			error: function(){
+				console.log("there was an error when trying to load solution_param");
+			},
+			complete: function() {
+				$('#loading-solution-click').hide();
+			}
+		});
+		
+		$('#solution_param').change(function(){//this will update the component_id
+			console.log("calling update_year2()");
+			update_year2();
+			console.log("done calling update_year2()");
+		});
+
+		function update_year2(){//this is helper function for when component param changes, update months and year
+
+			var solution1 = $('#solution_param').val();
+			
+			var temp_url = "http://localhost:8080/AjaxController/AjaxController/GenerateYearListForReport2";
+			temp_url += "/";
+			temp_url += solution1;
+			console.log("when updating year, the temp_url is:" + temp_url);
+	
+			
+		
+			$('#yearparam_start').empty();//clear out the year options
+			$('#monthparam_start').empty();//clear out the month options
+
+			$.ajax({
+//				url: "SecondColumn",
+				url: temp_url,
+				beforeSend: function(){
+					$('#loading-start_year-click').show();//used to show the loading icon
+				},
+				type: 'GET',
+//		        contentType: "application/json; charset=utf-8",
+				dataType: 'json',
+//				data: {'solution' : solution1, 'component' : component1, 'update_year' : "yes"},
+
+				success: function(order){
+					if(jQuery.isEmptyObject(order)){//checks to see whether there are valid years
+						$('#yearparam_start').append( new Option("No options", ""));
+						$('#monthparam_start').append( new Option("No options", ""));
+					}
+					else{//there are valid years!!
+//						$('#yearparam_start').append( new Option("Please select an option", ""));
+						$('#yearparam_start').append( new Option("Please select an option", ""));
+						$.each(order, function(key, value) {   
+							$('#yearparam_start').append($('<option>', { value: value}).text(value)); 
+//								$('#yearparam_start')
+//								.append($('<option>', { value : value })
+//								.text(value)); 
+						});
+					}//end of else
+				},//end of success
+				complete: function() {
+					$('#loading-start_year-click').hide();//hide the loading element
+				}
+			});
+			return false;
+		}
+
+		
+		
+});//end of $(document).ready(function(){

@@ -1,0 +1,28 @@
+package servletBean;
+
+public class ReportOneChart {
+	
+	String month;
+	String request;
+	
+	public String getMonth() {
+		return month;
+	}
+
+	public void setMonth(String month) {
+		this.month = month;
+	}
+
+	public String getRequest() {
+		return request;
+	}
+
+	public void setRequest(String request) {
+		this.request = request;
+	}
+
+	public ReportOneChart() {
+		// TODO Auto-generated constructor stub
+	}
+
+}

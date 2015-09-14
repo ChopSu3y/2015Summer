@@ -1,0 +1,38 @@
+/**
+ * 
+ */
+
+$(document).ready(function(){
+
+	console.log("I am in the document ready function");
+	var $sp = $('#solution_param');
+		$.ajax({
+		
+			beforeSend: function(){
+				$('#loading-solution-click').show();
+			},
+			url: "http://localhost:8080/AjaxController/AjaxController/GenerateSolutionList",
+			type: 'GET',
+			dataType: 'json',
+			success: function(order){
+				console.log("Success!");
+				$sp.append( new Option("Please select an option", "") );
+				$.each(order, function(key, value) {   
+					$sp.append($('<option>', {value: value}).text(value));
+					/*
+						$('#solution_param')
+						.append($('<option>', { value : value })
+						.text(value)); 
+						*/
+				});
+			},
+			error: function(){
+				console.log("there was an error when trying to load solution_param");
+			},
+			complete: function() {
+				$('#loading-solution-click').hide();
+			}
+		});
+
+	
+});//end of $(document).ready(function(){

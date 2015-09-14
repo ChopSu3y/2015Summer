@@ -1,0 +1,62 @@
+package servletBean;
+
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.google.gson.Gson;
+//this is for the map
+import java.util.HashMap;
+
+public class SecondColumn extends HttpServlet {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		
+//		System.out.println("Do get in SecondColumn is being called");
+		HashMap<String, String> ListOfComponent_IDS = new HashMap<String, String>();
+
+		String solution_id = request.getParameter("solution");
+//		System.out.println("The parameter in SecondColumn is:" + solution_id);
+		
+		String json = null;
+		
+		try{
+			Connection conn_one = DriverManager.getConnection("jdbc:oracle:thin:@usa7061lv1137.na.xerox.net:1532/ISPSVC", "ispaudit", "ISPu$a0300lvStg");
+			Statement stmt_one = conn_one.createStatement();
+			ResultSet rs_one;	
+		
+			String Query = "select distinct(COMPONENT_ID) from AUDIT_METRIC where SOLUTION_ID = '";
+			Query+=solution_id;
+			Query+="'";
+//			System.out.print("SecondColumn.java - The query inside SecondColumn is:" + Query);
+			rs_one = stmt_one.executeQuery(Query);
+			
+			while ( rs_one.next() ){
+				String add_this = rs_one.getString(1);
+//				System.out.print("Add_this is:" + add_this);
+				ListOfComponent_IDS.put(add_this, add_this);
+			}
+		}
+
+		catch (SQLException e){
+			e.printStackTrace();
+		}
+
+		json = new Gson().toJson(ListOfComponent_IDS);
+		response.setContentType("application/json");
+		response.setCharacterEncoding("UTF-8");
+		response.getWriter().write(json);
+	}
+}

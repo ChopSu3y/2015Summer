@@ -1,0 +1,76 @@
+/*
+$(function() {
+	console.log( "ready!" );
+
+	var solution_param;
+	$( "#solution_param" ).change(function() {
+		solution_param = $(this).val();
+		alert( "You selected " + solution_param );
+	}); 
+});
+*/
+
+$(document).ready(function(){
+	
+	$('#loading').hide();
+
+	$('#solution_param').change(function(){
+		
+		var solution = $('#solution_param').val();
+		console.log("solution param is:" + solution);
+		//alert("You have changed solution_id");
+		
+		var $cp = $('component_param');
+
+		$cp.empty();//clear out the select options
+		
+		$.ajax({
+			url: "SecondColumn",
+			type: 'GET',
+	        contentType: "application/json; charset=utf-8",
+			dataType: 'json',
+			data: {'solution' : solution},
+			success: function(order){
+//				if(order.isValid){
+				//you should have an if statement RIGHT HERE
+					//alert("Displaying component_ids");
+					$.each(order, function(key, value) {   
+							$('#component_param')
+							.append($('<option>', { value : key })
+							.text(value)); 
+					});
+//				}
+//				else{
+				//	alert('Please enter a valid username!!');
+//				}
+			}
+		});
+		solution_param_count++;
+		return false;
+	});
+
+	
+	
+	$('#component_param').change(function(){//this will update the month and year date
+		
+		
+		
+	});
+	
+
+	$('#yearparam_start').change(function(){//this will update the month
+		console.log("you have changed yearparam_start");
+		alert("You have changed yearparam_start");
+	});
+
+	$(document).ajaxStart(function() {//this is for the loading img
+		$('#loading').show();
+	}).ajaxStop(function() {
+		$('#loading').hide();
+	});
+});
+
+
+
+
+

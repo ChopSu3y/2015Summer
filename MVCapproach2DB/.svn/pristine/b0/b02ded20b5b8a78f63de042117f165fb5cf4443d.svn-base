@@ -1,0 +1,435 @@
+var local_url = "http://localhost:8080/AjaxController/AjaxController/";
+var xerox_url = "http://usa0300lv312.apps.mc.xerox.com:8080/AjaxController/AjaxController/";
+var replace_url = local_url;
+
+$(document).ready(function() {
+
+		
+	//initialization of the page
+	$('#loading-start_year-click').hide(); //underneath component
+	$('#loading-end_year-click').hide();
+	$('#loading-start_month-click').hide();
+	$('#loading-end_month-click').hide();	
+	//end of initialization of the page
+
+
+
+	populateSolutionList();//puts the options for the Solution Drop-Down list
+
+
+
+	$('#Submit1').click(function() {
+		window.location = "http://localhost:8080/MVCapproach2DB/First.jsp";
+		// window.location = "http://usa0300lv312.apps.mc.xerox.com:8080/MVCapproach2DB/Second.jsp";
+	});
+
+	$('#solution_param').change(function() { //this will update the component_id
+		// console.log("blocking UI");
+		// console.log("done with blocking call"); 
+		update_year_and_month( $('#yearparam_start'), $('#monthparam_start') , $('#loading-start_year-click'));
+		checkToSee();
+
+		update_year_and_month( $('#yearparam_end') , $('#monthparam_end'), $('#loading-end_year-click') );
+		checkToSee();
+		// console.log("about to unblock UI");
+		// console.log("done with unblocking call");	
+	}); //end of solution_param.change(function()
+
+
+
+	$('#yearparam_start').change(function() {
+		// console.log("Changing yearparam_start and updating month");
+		update_month($('#monthparam_start'), $('#yearparam_start'), $('#loading-start_month-click'));
+		checkToSee();
+	});
+
+	$('#yearparam_end').change(function() {
+		// console.log("Changing yearparam_end and updating month");
+		update_month( $('#monthparam_end') , $('#yearparam_end') , $('#loading-end_month-click'));
+		checkToSee();
+	});
+
+	$('#monthparam_start').change(function() {
+		// console.log("Changing monthparam_start");
+		checkToSee();
+	});
+
+	$('#monthparam_end').change(function() {
+		// console.log("Changing montparam_end");
+		checkToSee();
+	});
+
+	function checkToSee() {
+		if (FormIsFilled()) {
+			if(CompareMonthAndYear()){
+				$.blockUI({ //using the iPhoto blocker from blockUI
+					css: {
+						border: 'none',
+						padding: '15px',
+						backgroundColor: '#000',
+						'-webkit-border-radius': '10px',
+						'-moz-border-radius': '10px',
+						opacity: .9,
+						color: '#fff'
+					}
+				});
+
+				setTimeout($.unblockUI, 300);
+				// console.log("about to draw the chart");
+				DrawChart();
+			}
+			else{
+
+				//this will alert you that the start date is later than end date
+				$.blockUI({ //using auto-unblcok from blockUI
+					message: '<h1>Make sure start date is earlier than end date!</h1>',
+					timeout: 3000
+				});
+				// setTimeout("alert(\"pop up\");", 4000)
+				// setTimeout("alert("Please choose an end date that is later than the start");", 4000);
+			}
+		}
+	return;
+	}
+
+	// update_month($('#monthparam_start'), $('#yearparam_start'), $('#loading-start_month-click'));
+
+	function CompareMonthAndYearHelper(start_month, start_year, end_month, end_year){
+		if(start_year.val() > end_year.val()){
+			// console.log("start date is later");
+			return false;
+		}
+		else if(start_year.val() == end_year.val()){
+			// console.log("both years are equal");
+			var start_month_integer = month2Int(start_month.val());
+			var end_month_integer = month2Int(end_month.val());	
+			if(start_month_integer <= end_month_integer){
+				// console.log("the start date is earlier");
+				return true;
+			} 
+			else{
+				// console.log("the start date is later");
+				return false;
+			}
+		}
+		else{
+			// console.log("start date is earlier");
+			return true;
+		}
+	}
+
+	function CompareMonthAndYear(){
+		return CompareMonthAndYearHelper($('#monthparam_start'), $('#yearparam_start'), $('#monthparam_end'), $('#yearparam_end')); 
+	}
+
+	
+	function month2Int(month_var) {
+		// console.log("month_var is:" + month_var);
+		switch (month_var) {
+			case "JAN":
+				return 1;
+			case "FEB":
+				return 2;
+			case "MAR":
+				return 3;
+			case "APR":
+				return 4;
+			case "MAY":
+				return 5;
+			case "JUN":
+				return 6;
+			case "JUL":
+				return 7;
+			case "AUG":
+				return 8;
+			case "SEP":
+				return 9;
+			case "OCT":
+				return 10;
+			case "NOV":
+				return 11;
+			case "DEC":
+				return 12;
+				break;
+			default:
+				// console.log("Hello!");
+		}
+	}
+
+	function DrawChart(){
+		var solution = $('#solution_param').val();
+		var start_year = $('#yearparam_start').val();
+		var start_month = $('#monthparam_start').val();
+
+		var end_year = $('#yearparam_end').val();
+		var end_month = $('#monthparam_end').val();
+
+		// var temp_url = "http://localhost:8080/AjaxController/AjaxController/Report1/";
+		var temp_url = replace_url + "Report2/";
+		// var temp_url = "http://localhost:8080/AjaxController/AjaxController/Report2/";
+		temp_url += solution + "/";
+		temp_url += start_year + "/";
+		temp_url += start_month + "/";
+		temp_url += end_year + "/";
+		temp_url += end_month;
+		// console.log("The url when you clicked on google in the second web page is: " + temp_url);
+		$.ajax({
+			type: 'GET',
+			dataType: 'json',
+			url: temp_url,
+			success: function(response) {
+				drawchart(response); // calling method  
+			},
+			error: function() {
+				alert("Error loading data! Please try again.");
+			}
+		});
+	}
+
+/*
+	$('#Google').click(function() { //the Asynchronous Google Chart update button
+		var solution = $('#solution_param').val();
+		var start_year = $('#yearparam_start').val();
+		var start_month = $('#monthparam_start').val();
+
+		var end_year = $('#yearparam_end').val();
+		var end_month = $('#monthparam_end').val();
+
+		// var temp_url = "http://localhost:8080/AjaxController/AjaxController/Report1/";
+		var temp_url = "http://localhost:8080/AjaxController/AjaxController/Report2/";
+		temp_url += solution + "/";
+		temp_url += start_year + "/";
+		temp_url += start_month + "/";
+		temp_url += end_year + "/";
+		temp_url += end_month;
+
+		// console.log("The url when you clicked on google in the second web page is: " + temp_url);
+
+		$.ajax({
+			type: 'GET',
+			dataType: 'json',
+			url: temp_url,
+
+			success: function(response) {
+				drawchart(response); // calling method  
+			},
+
+			error: function() {
+				alert("Error loading data! Please try again.");
+			}
+		});
+	});
+*/
+
+
+
+
+}); //end of $(document).ready(function(){
+
+
+function drawchart(dataValues) {
+	// Callback that creates and populates a data table,  
+	// instantiates the pie chart, passes in the data and  
+	// draws it.  
+	var data = new google.visualization.DataTable();
+
+	data.addColumn('string', 'Date');
+	data.addColumn('number', 'Request_Count');
+
+	$.each(dataValues, function(k, v) {
+		// console.log("Month is:" + v.DATE + " and request count is:" + v.REQUEST_COUNT);
+		data.addRow([dataValues[k].DATE, parseInt(dataValues[k].REQUEST_COUNT, 10)]);
+	});
+	// Instantiate and draw our chart, passing in some options  
+	var chart = new google.visualization.ColumnChart(document.getElementById('chartdiv'));
+
+	var options = {
+		chartArea:{left:80,top:0,width:'80%',height:'80%'},
+			'title': 'Request Count by Date',
+			// 'width': 100%,
+			// 'height': 100%,
+			hAxis: {
+				title: 'Date'
+			},
+			vAxis: {
+				textPosition: 'in',
+				logScale: true,
+				title: 'Request Count',
+				minValue: 0
+			},
+			animation: {
+				easing: 'in',
+				startup: true
+			},
+			legend: {
+				position: 'bottom',
+			}
+	}
+/*
+	var options = {
+		'title': 'Request Count by Date',
+		'width': 1300,
+		'height': 900,
+		hAxis: {
+			title: 'Date'
+		},
+		vAxis: {
+			textPosition: 'in',
+			logScale: true,
+			title: 'Request Count',
+			minValue: 0
+		},
+		animation: {
+			easing: 'in',
+			startup: true
+		},
+		legend: {
+			position: 'bottom',
+		}
+	};
+	*/
+
+ 	chart.draw(data, options);
+
+/*
+	chart.draw(data, {
+		title: "Request Count by Date",
+		position: "top",
+		fontsize: "14px",
+		chartArea: {
+			width: '100%'
+		},
+	});
+*/
+}
+
+	
+
+function update_month(month_element, year_element, loading_pic) {
+	var $sp = $('#solution_param');
+	var solution = $sp.val();
+	var year = year_element.val();
+
+	var temp_url = replace_url + "GenerateMonthList2/";
+	// var temp_url = "http://localhost:8080/AjaxController/AjaxController/GenerateMonthList2/";
+	temp_url += solution + "/";
+	temp_url += year;
+
+	month_element.empty();//empty the month options
+
+	$.ajax({
+		beforeSend: function() {
+			loading_pic.show();
+		},
+		url: temp_url,
+		type: 'GET',
+		dataType: 'json',
+		success: function(order) {
+			// console.log("Success!");
+				month_element.append(new Option("Please select an option", ""));
+			$.each(order, function(key, value) {
+				month_element.append($('<option>', {
+					value: value
+				}).text(value));
+			});
+		},
+		error: function() {
+			// console.log("Error inside update_month in second_javascript.js");
+		},
+		complete: function() {
+			loading_pic.hide();
+		}
+	}); //end of ajax call(document.ready())
+}
+
+function populateSolutionList() {
+	var $sp = $('#solution_param');
+
+	var temp_url = replace_url + "GenerateSolutionList";
+	$.ajax({
+		beforeSend: function() {
+			$('#loading-solution-click').show();
+		},
+		// url: "http://localhost:8080/AjaxController/AjaxController/GenerateSolutionList",
+		url: temp_url,
+		type: 'GET',
+		dataType: 'json',
+		success: function(order) {
+			// console.log("Success!");
+			$sp.append(new Option("Please select an option", ""));
+			$.each(order, function(key, value) {
+				$sp.append($('<option>', {
+					value: value
+				}).text(value));
+			});
+		},
+		error: function() {
+			// console.log("there was an error when trying to load solution_param");
+		},
+		complete: function() {
+			$('#loading-solution-click').hide();
+		}
+	}); //end of ajax call(document.ready())
+} //end of populateSolutionList
+
+
+
+function update_year_and_month(year, month, loading) { //this is helper function for when component param changes, update months and year
+	var solution1 = $('#solution_param').val();
+	var temp_url = replace_url + "GenerateYearListForReport2";
+	// var temp_url = "http://localhost:8080/AjaxController/AjaxController/GenerateYearListForReport2";
+	temp_url += "/";
+	temp_url += solution1;
+	// console.log("when updating year, the temp_url is:" + temp_url);
+	year.empty(); //clear out the year options
+	month.empty(); //clear out the month options
+
+	$.ajax({
+		url: temp_url,
+		beforeSend: function() {
+			loading.show(); //used to show the loading icon
+		},
+		type: 'GET',
+		dataType: 'json',
+		success: function(order) {
+			if (jQuery.isEmptyObject(order)) { //checks to see whether there are valid years
+				year.append(new Option("No options", ""));
+				month.append(new Option("No options", ""));
+			} else { //there are valid years!!
+				// $('#yearparam_start').append(new Option("Please select an option", ""));
+			year.append(new Option("Please select an option", ""));	
+				$.each(order, function(key, value) {
+					year.append($('<option>', {
+						value: value
+					}).text(value));
+				});
+			} //end of else
+		}, //end of success
+		complete: function() {
+			loading.hide(); //hide the loading element
+		}
+	}); //end of ajax call
+	return false;
+} //end of update_year2
+
+function FormIsFilled() { //checks to see whether or not the options are NULL
+	// console.log("formisfilled is being called");
+	if ( $('#solution_param').val() != null && $('#yearparam_start').val() != null && $('#monthparam_start').val() != null && $('#yearparam_end').val() != null && $('#monthparam_end').val() != null
+
+		&& $('#solution_param').val() != "" && $('#yearparam_start').val() != "" && $('#monthparam_start').val() != "" && $('#yearparam_end').val() != "" && $('#monthparam_end').val() != ""
+	) {
+		/*
+		console.log("solution param is:" + $('#solution_param').val());
+		console.log("month param is:" + $('#monthparam_start').val());
+		console.log("year param is:" + $('#yearparam_start').val());
+
+		console.log("month param is:" + $('#monthparam_end').val());
+		console.log("year param is:" + $('#yearparam_end').val());
+		*/
+
+		return true;
+	}
+	else {
+		return false;
+	}
+}

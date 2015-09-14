@@ -1,0 +1,105 @@
+$(document).ready(function() {
+
+	
+	$('#Submit6').click(function() {
+		
+		var temp_url = "http://localhost:8080/AjaxController/AjaxController/";
+		temp_url += "Report6";
+		
+		
+		$.ajax({
+			type: 'GET',
+			dataType: 'json',
+			url: temp_url,
+			success: function(response) {
+				console.log(response);
+				console.log("We were able to grab report 7");
+				drawchart(response);
+				console.log("We are about to print the chart");
+			},
+			error: function() {
+				alert("Error loading data! Please try again.");
+			}
+		});
+	});
+	
+	
+	
+	function drawchart(dataValues) {
+		// Callback that creates and populates a data table,  
+		// instantiates the pie chart, passes in the data and  
+		// draws it.  
+		  var data = new google.visualization.DataTable();
+
+		data.addColumn('string', 'Hour of the Day');
+		data.addColumn('number', 'Error');
+		data.addColumn('number', 'Total Request Count');
+		// $.each(dataValues, function(k,v) {
+		// 	var original = dataValues[k].DATE;
+		// 	var date = original.substring(0,2);
+		// 	data.addRow([ parseInt(date), parseInt(dataValues[k].ERROR_COUNT), parseInt(dataValues[k].REQUEST_COUNT)]);
+		// 	console.log( parseInt(dataValues[k].REQUEST_COUNT) );
+		// });
+
+		$.each(dataValues, function(k,v) {
+			// data.addRow([ parseInt(dataValues[k].HOUR), parseInt(dataValues[k].ERROR_COUNT), parseInt(dataValues[k].REQUEST_COUNT)]);
+			data.addRow([ dataValues[k].HOUR, parseInt(dataValues[k].ERROR_COUNT), parseInt(dataValues[k].REQUEST_COUNT)]);
+			console.log ("The hour in report 6 is" + dataValues[k].HOUR);
+		});
+				
+		// Instantiate and draw our chart, passing in some options  
+//		var chart = new google.visualization.LineChart(document.getElementById('chartdiv'));
+		var chart = new google.visualization.ColumnChart(document.getElementById('chartdiv'));
+		
+		var options = {
+				colors: ['#dc3912', '#3366cc'],
+				 vAxes: {0: {logScale: false, title: 'Errors'},
+			            1: {logScale: false, title: 'Total Requests' }},
+			            
+			            series:{
+			                0:{targetAxisIndex:0},
+			                1:{targetAxisIndex:1}
+//			                2:{targetAxisIndex:1}
+			             },
+			                   
+
+				title: 'Solution: ' + dataValues[0].SOLUTION_ID + ', Component:' + dataValues[0].COMPONENT_ID + ", Errors and Request Counts (July-1-2015 to July-24-2015)",
+				titlePosition: 'in',
+				pointSize: 10,
+					chartArea: {
+							left: 115,
+							top: 10,
+							width: '80%',
+							height: '80%'
+						},
+					hAxis:{
+						title: 'Time(EST)',
+						gridlines:{
+							color: '#333',
+							count: 4
+						}
+					},
+					
+					vAxis:{
+						title: 'Errors',
+						gridlines:{
+							color: '#333',
+							count: 4
+						}
+					},
+					
+//		          curveType: 'function',
+		          legend: { position: 'bottom' }
+		};
+		 /*
+		var formatter = new google.visualization.NumberFormat({
+			groupingSymbol: ',',
+			fractionDigits: 0
+		});
+		formatter.format(data, 1);
+		*/
+		chart.draw(data, options);
+	}//end of drawchart()
+	
+	
+});

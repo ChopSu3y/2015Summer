@@ -1,0 +1,253 @@
+package com.xerox.ajaxstuff;
+import java.util.ArrayList;
+
+import javax.ws.rs.Produces;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+/*
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.Consumes;
+*/
+
+
+
+
+
+import com.google.gson.Gson;
+import com.xerox.isp.volumereports.ReportFive;
+import com.xerox.isp.volumereports.ReportFour;
+import com.xerox.isp.volumereports.ReportOne;
+import com.xerox.isp.volumereports.ReportThree;
+import com.xerox.isp.volumereports.ReportTwo;
+import com.xerox.isp.volumereports.VolumeReportBean;
+
+
+@Path("/AjaxController")
+public class AjaxResource {
+
+	@GET()
+	@Path("Report1/{solution}/{component}/{year}/{month}")
+	@Produces("application/json")
+	public String Report1(@PathParam("solution") String solution, @PathParam("component") String component, @PathParam("year") String year, @PathParam("month") String month){
+		ArrayList<ReportOne> tempList = VolumeReportBean.generateReportOne(solution, component, year, month);
+		String json = new Gson().toJson( tempList );
+		return json;
+	}
+	
+
+	@GET()
+	@Path("Report2/{solution}/{start_year}/{start_month}/{end_year}/{end_month}")
+	@Produces("application/json")
+	public String Report2(@PathParam("solution") String solution, @PathParam("start_year") String start_year, @PathParam("start_month") String start_month,
+			@PathParam("end_year") String end_year, @PathParam("end_month")  String end_month){
+		ArrayList<ReportTwo> tempList = VolumeReportBean.generateReportTwo(solution, start_year, start_month, end_year, end_month);
+		String json = new Gson().toJson( tempList );	
+		return json;
+	}
+	
+	
+	@GET()
+	@Path("GenerateSolutionList")
+	@Produces("application/json")
+	public String GenerateSolutionList(){
+		ArrayList<String> tempList = VolumeReportBean.generateSolutionList();
+		String json = new Gson().toJson( tempList );	
+		return json;
+	}
+
+	@GET()
+	@Path("GenerateComponentList/{solution}")
+	@Produces("application/json")
+	public String GenerateComponentList(@PathParam("solution") String solution){
+		ArrayList<String> tempList = VolumeReportBean.generateComponentList(solution);
+		String json = new Gson().toJson( tempList );
+		return json;
+	}
+	
+	@GET()
+	@Path("GenerateYearList/{solution}/{component}")
+	@Produces("application/json")
+	public String GenerateYearList(@PathParam("solution") String solution, @PathParam("component") String component){
+		ArrayList<String> tempList = VolumeReportBean.generateYearList(solution, component);
+		String json = new Gson().toJson( tempList );	
+		return json;
+	}
+	
+	@GET()
+	@Path("GenerateMonthList/{solution}/{component}/{year}")
+	@Produces("application/json")
+	public String GenerateMonthList(@PathParam("solution") String solution, @PathParam("component") String component, @PathParam("year") String year){
+		ArrayList<String> tempList = VolumeReportBean.generateMonthList(solution, component, year);
+		String json = new Gson().toJson( tempList );	
+		return json;
+	}
+	
+	@GET()
+	@Path("GenerateYearListForReport2/{solution}")
+	@Produces("application/json")
+	public String GenerateYearListForReport2(@PathParam("solution") String solution){
+		ArrayList<String> tempList = VolumeReportBean.generateYearListForReport2(solution);
+		String json = new Gson().toJson( tempList );
+		return json;	
+	}
+	
+	@GET()
+	@Path("GenerateYearListForReport7/{solution}/{component}")
+	@Produces("application/json")
+	public String GenerateYearListForReport7(@PathParam("solution") String solution, @PathParam("component") String component){
+		ArrayList<String> tempList = VolumeReportBean.generateYearListForReport7(solution, component);
+		String json = new Gson().toJson( tempList );
+		return json;	
+	}
+	
+	@GET()
+	@Path("GenerateCompListForReport7/{solution}")
+	@Produces("application/json")
+	public String GenerateCompListForReport7(@PathParam("solution") String solution){
+		ArrayList<String> tempList = VolumeReportBean.generateCompListForReport7(solution);
+		String json = new Gson().toJson( tempList );
+		return json;	
+	}
+	
+	@GET()
+	@Path("GenerateMonthList2/{solution}/{year}")
+	@Produces("application/json")
+	public String GenerateMonthList2(@PathParam("solution") String solution, @PathParam("year") String year){
+		ArrayList<String> tempList = VolumeReportBean.generateMonthList2(solution, year);
+		String json = new Gson().toJson( tempList );
+		return json;	
+	}
+	
+	@GET()
+	@Path("GenerateDayList7/{solution}/{component}/{year}/{month}")
+	@Produces("application/json")
+	public String GenerateDayList7(@PathParam("solution") String solution, @PathParam("component") String component, @PathParam("year") String year, @PathParam("month") String month){
+		ArrayList<String> tempList = VolumeReportBean.generateDayList7(solution, component, year, month);
+		String json = new Gson().toJson( tempList );
+		return json;	
+	}
+	
+	@GET()
+	@Path("GenerateMonthList7/{solution}/{component}/{year}")
+	@Produces("application/json")
+	public String GenerateMonthList7(@PathParam("solution") String solution, @PathParam("component") String component, @PathParam("year") String year){
+		ArrayList<String> tempList = VolumeReportBean.generateMonthList7(solution, component, year);
+		String json = new Gson().toJson( tempList );
+		return json;	
+	}
+	
+	@GET()
+	@Path("Report3")
+	@Produces("application/json")
+	public String Report3(){
+		ArrayList<ReportThree> tempList = VolumeReportBean.generateReportThree("hey", "hey", "hey", "hey");
+		String json = new Gson().toJson( tempList );
+		return json;
+	}
+	
+	@GET()
+	@Path("Report4/{solution}/{component}/{start_date}/{end_date}")
+//	@Path("Report7/{solution}/{component}/{start_date}/{end_date}")
+//	@Produces("application/json")
+	public String Report4(@PathParam("solution") String solution, @PathParam("component") String component, @PathParam("start_date") String start_date, @PathParam("end_date") String end_date){
+		ArrayList<ReportFour> tempList = VolumeReportBean.generateReportFour(solution, component, start_date, end_date);
+		String json = new Gson().toJson( tempList );
+		return json;
+	}
+
+	@GET()
+	@Path("Report5")
+	@Produces("application/json")
+	public String Report5(){
+			ArrayList<ReportFive> tempList = VolumeReportBean.generateReportFive("hey", "hey", "hey", "hey");
+			String json = new Gson().toJson( tempList );
+			return json;
+	}
+	
+//	public static ArrayList<String> GenerateCompList4(String solution){	
+		
+	@GET()
+	@Path("GenerateCompList4/{solution}")
+	@Produces("application/json")
+	public String GenerateCompList4(@PathParam("solution") String solution){
+		ArrayList<String> tempList = VolumeReportBean.GenerateCompList4(solution);
+		String json = new Gson().toJson( tempList );
+		return json;
+	}
+	
+	@GET()
+	@Path("GenerateYearList4/{solution}/{component}")
+	@Produces("application/json")
+	public String GenerateYearList4(@PathParam("solution") String solution, @PathParam("component") String component){
+		ArrayList<String> tempList = VolumeReportBean.GenerateYearList4(solution, component);
+		String json = new Gson().toJson( tempList );
+		return json;
+	}
+	
+	
+	@GET()
+	@Path("GenerateMonthList4/{solution}/{component}/{year}")
+	@Produces("application/json")
+	public String GenerateMonthList4(@PathParam("solution") String solution, @PathParam("component") String component, @PathParam("year") String year){
+		ArrayList<String> tempList = VolumeReportBean.GenerateMonthList4(solution, component, year);
+		String json = new Gson().toJson( tempList );
+		return json;
+	}
+/*	
+	@GET()
+	@Path("GenerateDays4/{year}/{month}")
+	@Produces("application/json")
+	public String GenerateDays4(@PathParam("year") String year, @PathParam("month") String month){
+			System.out.println("GenerateDays4 is being called");
+			ArrayList<String> tempList = VolumeReportBean.CreateListOfDays2LastDateOfMonth(month,year);
+			String json = new Gson().toJson( tempList );
+			System.out.println("GenerateDays4 is done being called");
+			return json;
+	}*/
+
+	
+	@GET()
+	@Path("Report6")
+	@Produces("application/json")
+	public String Report6(){
+			ArrayList<ReportFive> tempList = VolumeReportBean.generateReportSix("hey", "hey", "hey", "hey");
+			String json = new Gson().toJson( tempList );
+			return json;
+	}
+	
+	@GET()
+	@Path("Report7/{solution}/{component}/{start_date}/{end_date}")
+	@Produces("application/json")
+	public String Report7(@PathParam("solution") String solution, @PathParam("component") String component, @PathParam("start_date") String start_date, @PathParam("end_date") String end_date){
+			ArrayList<ReportFive> tempList = VolumeReportBean.generateReportSeven(solution, component, start_date, end_date);
+			String json = new Gson().toJson( tempList );
+			return json;
+	}
+	
+	@GET()
+	@Path("GenerateDays7/{year}/{month}")
+	@Produces("application/json")
+	public String GenerateDays7(@PathParam("year") String year, @PathParam("month") String month){
+			System.out.println("GenerateDays7 is being called");
+			ArrayList<String> tempList = VolumeReportBean.CreateListOfDays2LastDateOfMonth(month,year);
+			String json = new Gson().toJson( tempList );
+			System.out.println("GenerateDays7 is done being called");
+			return json;
+	}
+	/*
+	@Consumes(MediaType.APPLICATION_JSON)
+	@GET()
+	@Path("publishMessage/{param}")
+	@Produces(MediaType.APPLICATION_JSON)
+
+	 public Response publishMessage(@PathParam("param") String msgStr){
+		System.out.println("publishMessage is being called");
+        String responseStr = "Received message: "+msgStr;
+        return Response.status(200).entity(responseStr).build();
+    }
+    */
+	
+}

@@ -1,0 +1,250 @@
+package servletBean;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.DriverManager;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+//import java.sql.SQLException;
+import java.sql.Statement;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.lang.String;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+public class DataBaseServlet extends HttpServlet {
+
+	public DataBaseServlet() {
+		// TODO Auto-generated constructor stub
+	}
+	 //private String message;
+
+	  public void init() throws ServletException
+	  {
+	      // Do required initialization
+	  //    message = "Hello World";
+	  }
+
+	  public void doGet(HttpServletRequest request,
+	                    HttpServletResponse response)
+	            throws ServletException, IOException
+	  {
+		  
+//		  String clrs[] = request.getParameterValues("color");
+//		  String one=request.GetParameterValue("param1");//check to see if this prints out okay
+		  
+		  
+		  String temp = "Welcome to the Solution Statistics viewer!";
+		  request.setAttribute("text", temp );
+		 
+		  
+		  
+		String solution_id = request.getParameter("param1");
+		System.out.print(solution_id);
+		String component_id = request.getParameter("param2");
+		System.out.print(component_id);
+		String month = request.getParameter("monthparam");
+		System.out.print(month);
+		String year = request.getParameter("yearparam");
+		System.out.print(year);
+		
+		String NiceDate = TurnToNiceDate( month, year);
+		System.out.println("Now the nice date is:" + NiceDate);
+
+
+	
+	
+		
+		
+		
+
+		
+		
+		
+
+		  try{
+		//	  Class.forName("oracle.jdbc.driver.OracleDriver");
+//			  Connection conn = DriverManager.getConnection("jdbc:oracle:thin:@usa0300lv1194.na.xerox.net:1542/ISPSVC","ispauditdev", "Ei6C#Cr4zPwRule");
+ 			  Connection conn = DriverManager.getConnection("jdbc:oracle:thin:@usa7061lv1137.na.xerox.net:1532/ISPSVC","ispaudit", "ISPu$a0300lvStg");
+			  Statement stmt = conn.createStatement();
+
+						ResultSet rs;
+			if (solution_id != null) {
+				String DaQuery = CreateSqlQuery(solution_id, component_id, NiceDate);
+				System.out.println("The query is:" + DaQuery);
+				rs = stmt.executeQuery(DaQuery);
+				
+				ArrayList<ReportOne> BigList = new ArrayList<ReportOne>();//creating a place to store the results of query
+				
+				while(rs.next()){
+					ReportOne tempReportOne = new ReportOne();
+					tempReportOne.setSOLUTION_ID(rs.getString(1));
+					tempReportOne.setCOMPONENT_ID(rs.getString(2));
+					tempReportOne.setDATE(rs.getString(3));
+					tempReportOne.setREQUEST_COUNT(rs.getString(4));
+					BigList.add(tempReportOne);	
+
+					System.out.println(tempReportOne.getSOLUTION_ID());
+					System.out.println(tempReportOne.getCOMPONENT_ID());
+					System.out.println(tempReportOne.getDATE());
+					System.out.println(tempReportOne.getREQUEST_COUNT());
+					
+					/*	
+					System.out.println(rs.getString(2));
+					System.out.println(rs.getString(3));
+					System.out.println(rs.getString(4));
+					*/
+				}
+				
+				request.setAttribute("BigList", BigList);//sending the BigList to the object
+				
+			}
+			else {
+				System.out.println("The solution_id has not been chosen yet, so the query has not been formed");
+			}
+			  
+			  
+//			String second_sql = "select distinct(SOLUTION_ID) from AUDIT_METRIC";
+			String second_sql = "select distinct(SOLUTION_ID) from AUDIT_METRIC ";
+
+				
+
+				
+			rs=stmt.executeQuery(second_sql);
+			ArrayList<String> Unique = new ArrayList<String>();
+			while(rs.next()){
+				Unique.add( rs.getString(1));
+			//	System.out.println( rs.getString(1));
+			}
+			Collections.sort(Unique);//this will sort the array list
+			request.setAttribute("Unique", Unique);//add this to the request object
+			
+			second_sql = "select distinct(COMPONENT_ID) from AUDIT_METRIC";
+			rs=stmt.executeQuery(second_sql);
+			ArrayList<String> SecondParam = new ArrayList<String>();
+			while(rs.next()){
+				String temporary=rs.getString(1);
+				if(temporary!=null){
+					SecondParam.add( temporary);
+				}
+			}
+
+			Collections.sort(SecondParam, String.CASE_INSENSITIVE_ORDER);//sort array list disregarding the case of the word
+
+			request.setAttribute("SecondParam", SecondParam );//add this to the request object
+	
+			ArrayList<String> MonthList = new ArrayList<String>();
+			MonthList = MakeMonths();
+			request.setAttribute("MonthList", MonthList);
+			
+			ArrayList<String> YearList = new ArrayList<String>();
+			YearList = MakeYears();
+			request.setAttribute("YearList", YearList);
+					
+			 conn.close();//closes the connection
+			  RequestDispatcher rd = request.getRequestDispatcher("NewFile.jsp");
+			  System.out.print("Before sending the rd.forward(request, response)");
+			  rd.forward(request, response); 
+			  return;
+		  }
+		  
+		  catch(SQLException e){
+				e.printStackTrace();
+		  }
+		  
+		  
+	      // Set response content type
+	 //     response.setContentType("text/html");
+
+	      // Actual logic goes here.
+//	      PrintWriter out = response.getWriter();
+//	      out.println("<h1>" + message + "</h1>");*/
+		  
+	  }
+	  
+	  
+	  protected void doPost(HttpServletRequest arg0, HttpServletResponse arg1)
+			  throws ServletException, IOException {
+		  
+			  doGet(arg0, arg1);
+	  } 
+	  
+	  
+	  public void destroy()
+	  {
+	      // do nothing.
+	  }
+	  
+	public ArrayList<String> MakeMonths() {
+		ArrayList<String> tempArrayList = new ArrayList<String>();
+		tempArrayList.add("JAN");
+		tempArrayList.add("FEB");
+		tempArrayList.add("MAR");
+		tempArrayList.add("APR");
+		tempArrayList.add("MAY");
+		tempArrayList.add("JUN");
+		tempArrayList.add("JUL");
+		tempArrayList.add("AUG");
+		tempArrayList.add("SEP");
+		tempArrayList.add("OCT");
+		tempArrayList.add("NOV");
+		tempArrayList.add("DEC");
+
+		return tempArrayList;
+	}
+
+	public ArrayList<String> MakeYears() {
+		ArrayList<String> tempArrayList = new ArrayList<String>();
+		tempArrayList.add("2010");
+		tempArrayList.add("2011");
+		tempArrayList.add("2012");
+		tempArrayList.add("2013");
+		tempArrayList.add("2014");
+		tempArrayList.add("2015");
+
+		return tempArrayList;
+	}
+
+	public String TurnToNiceDate(String month, String year) {
+		// Given a month and year, it will turn into this format, ex:
+		// '01-JAN-2015'
+		String NiceDate = "'01-";
+		NiceDate += month;
+		NiceDate += "-";
+		NiceDate += year;
+		NiceDate += "'";
+		return NiceDate;
+	}
+		  
+	public String CreateSqlQuery(String Solution_id, String Component_id,
+			String NiceDate) { // NiceDate is in '01-JAN-2015' format
+		/*
+		 * select SOLUTION_ID, COMPONENT_ID, to_char(METRIC_END_TIME,'yyyy-mm')
+		 * as MONTH, sum(METRIC_VALUE) as REQUEST_COUNT from AUDIT_METRIC where
+		 * METRIC_START_TIME >= '01-JAN-2015' and METRIC_END_TIME <= (SYSDATE)
+		 * and SOLUTION_ID = 'S0228_CrmInquiryServiceWeb' and COMPONENT_ID =
+		 * 'getHistory' and METRIC_NAME = 'Daily_Entry_Count' group by
+		 * SOLUTION_ID, COMPONENT_ID, to_char(METRIC_END_TIME,'yyyy-mm') order
+		 * by SOLUTION_ID, COMPONENT_ID, to_char(METRIC_END_TIME,'yyyy-mm')
+		 */
+		String SqlQuery = "select SOLUTION_ID, COMPONENT_ID, to_char(METRIC_END_TIME,'yyyy-mm') as MONTH, sum(METRIC_VALUE) as REQUEST_COUNT from AUDIT_METRIC";
+		SqlQuery += " where METRIC_START_TIME >= ";
+		SqlQuery += NiceDate;// add the start date
+		SqlQuery += " and METRIC_END_TIME <= (SYSDATE) and SOLUTION_ID = '";
+		SqlQuery += Solution_id; //add the solution id
+		SqlQuery += "' and COMPONENT_ID = '";
+		SqlQuery += Component_id; // add the component id
+		SqlQuery += "' and METRIC_NAME = 'Daily_Entry_Count' group by SOLUTION_ID, COMPONENT_ID, to_char(METRIC_END_TIME,'yyyy-mm') order by";
+		SqlQuery += " SOLUTION_ID, COMPONENT_ID, to_char(METRIC_END_TIME,'yyyy-mm')";
+		return SqlQuery;
+	}
+	  
+	
+}

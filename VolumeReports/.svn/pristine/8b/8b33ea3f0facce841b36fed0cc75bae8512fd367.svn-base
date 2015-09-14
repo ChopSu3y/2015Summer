@@ -1,0 +1,343 @@
+package com.xerox.isp.volumereports;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collections;
+
+import javax.ejb.Stateless;
+
+//import servletBean.ReportOne;
+import com.xerox.isp.volumereports.ReportOne;
+
+/**
+ * Session Bean implementation class VolumeReportBean
+ */
+@Stateless
+public class VolumeReportBean implements VolumeReportBeanLocal {
+
+	ArrayList<ReportOne> reportOneList;
+	ArrayList<ReportTwo> reportTwoList;
+
+	ArrayList<String> monthList;
+	ArrayList<String> yearList;	
+	
+	ArrayList<String> solution_id_list;//holds the unique solution ids
+	ArrayList<String> component_id_list;//holds the unique component ids
+	
+	Boolean display;//whether or not to display the chart depending on if there is data from SQL query
+	Boolean print;//to tell the user whether or not there SQL results were bad
+	
+	public Boolean getDisplay() {
+		return display;
+	}
+
+	public void setDisplay(Boolean display) {
+		this.display = display;
+	}
+
+	public ArrayList<ReportOne> getReportOneList() {
+		return reportOneList;
+	}
+
+	public void setReportOneList(ArrayList<ReportOne> reportOneList) {
+		this.reportOneList = reportOneList;
+	}
+
+	public ArrayList<ReportTwo> getReportTwoList() {
+		return reportTwoList;
+	}
+
+	public void setReportTwoList(ArrayList<ReportTwo> reportTwoList) {
+		this.reportTwoList = reportTwoList;
+	}
+
+	public ArrayList<String> getMonthList() {
+		return monthList;
+	}
+
+	public void setMonthList(ArrayList<String> monthList) {
+		this.monthList = monthList;
+	}
+
+	public ArrayList<String> getYearList() {
+		return yearList;
+	}
+
+	public void setYearList(ArrayList<String> yearList) {
+		this.yearList = yearList;
+	}
+
+	public ArrayList<String> getSolution_id_list() {
+		return solution_id_list;
+	}
+
+	public void setSolution_id_list(ArrayList<String> solution_id_list) {
+		this.solution_id_list = solution_id_list;
+	}
+
+	public ArrayList<String> getComponent_id_list() {
+		return component_id_list;
+	}
+
+	public void setComponent_id_list(ArrayList<String> component_id_list) {
+		this.component_id_list = component_id_list;
+	}
+
+	public void generateReportOne(Boolean DisplayChart, String solution_id, String component_id, String month_start, String year_start){
+		try{
+			Connection conn_one = DriverManager.getConnection("jdbc:oracle:thin:@usa7061lv1137.na.xerox.net:1532/ISPSVC", "ispaudit", "ISPu$a0300lvStg");
+			Statement stmt_one = conn_one.createStatement();
+			ResultSet rs_one;	
+			
+			if (DisplayChart){
+//				System.out.println("DisplayChart is true");
+				String NiceDate_one = TurnToNiceDateStart(month_start, year_start);
+				String Query_one = CreateSqlQueryReport1(solution_id, component_id, NiceDate_one); 
+				
+				rs_one = stmt_one.executeQuery(Query_one);
+			
+				int counter_one=0;
+				while(rs_one.next()){
+					counter_one++;
+					ReportOne tempReportOne = new ReportOne();
+					tempReportOne.setSOLUTION_ID(rs_one.getString(1));
+					tempReportOne.setCOMPONENT_ID(rs_one.getString(2));
+					tempReportOne.setDATE(rs_one.getString(3));
+					tempReportOne.setREQUEST_COUNT(rs_one.getString(4));
+					reportOneList.add(tempReportOne);
+				}
+				if(counter_one!=0){
+//					System.out.println("Counter in ReportOne is 0");
+					display=true;
+				}
+				if(counter_one==0 && solution_id!=null){
+//					System.out.println("YOU SHOULD PRINT A MESSAGE REPORT 1");
+					print=true;
+				}
+			}
+			
+			if (!DisplayChart){
+//				System.out.println("DisplayChart is false");
+			}
+			
+			String unique_sol_query = "select distinct(SOLUTION_ID) from AUDIT_METRIC";
+			solution_id_list = GrabDistinctForColumns(unique_sol_query, stmt_one);//solution ID
+			
+			String unique_comp_query = "select distinct(COMPONENT_ID) from AUDIT_METRIC";
+			component_id_list = GrabDistinctForColumns(unique_comp_query, stmt_one);//component ID
+		
+			//Making list for Month and Years
+			monthList = MakeMonths();
+			yearList = MakeYears();
+	
+			//closing connection
+			conn_one.close();
+			return;
+		}
+		catch (SQLException e){
+			e.printStackTrace();
+		}
+	}
+
+	public Boolean getPrint() {
+		return print;
+	}
+
+	public void setPrint(Boolean print) {
+		this.print = print;
+	}
+
+	public void generateReportTwo(Boolean DisplayChart, String solution_id, String month_start, String year_start, String month_end, String year_end){
+		
+		try{
+			Connection conne = DriverManager.getConnection("jdbc:oracle:thin:@usa7061lv1137.na.xerox.net:1532/ISPSVC", "ispaudit", "ISPu$a0300lvStg");
+			Statement stmt = conne.createStatement();
+			ResultSet rs;
+		
+			if (DisplayChart) {//Display the chart
+//				System.out.println("DisplayChart is true");
+				
+				String StartDate = TurnToNiceDateStart(month_start, year_start);
+				String EndDate = TurnToNiceDateEnd(month_end, year_end);
+
+				String Query = CreateSqlQueryReport2(solution_id, StartDate, EndDate);
+				rs = stmt.executeQuery(Query);
+
+				//populating reportOneList
+				int counter=0;
+				while (rs.next()) {
+					counter++;
+					ReportTwo tempReportTwo = new ReportTwo();
+					tempReportTwo.setSOLUTION_ID(rs.getString(1));
+					tempReportTwo.setDATE(rs.getString(2));
+					tempReportTwo.setREQUEST_COUNT(rs.getString(3));
+					reportTwoList.add(tempReportTwo); //added it to the big list
+				}
+				if(counter!=0){
+//					System.out.println("The counter is 0 in report 2");
+					display=true;
+				}
+				if(counter==0 && solution_id!=null){
+//					System.out.println("YOU SHOULD PRINT A MESSAGE REPORT 2");
+					print=true;
+				}
+					
+			}
+			if (!DisplayChart){
+//				System.out.println("DisplayChart is false");
+			}
+			
+			//getting unique IDS for SOLUTION_ID
+			String unique_sol_query = "select distinct(SOLUTION_ID) from AUDIT_METRIC";
+			solution_id_list = GrabDistinctForColumns(unique_sol_query, stmt);//solution ID
+		
+			//Making list for Month and Years
+			monthList = MakeMonths();
+			yearList = MakeYears();
+	
+			//closing connection
+			conne.close();
+			return;
+		}
+		
+		catch (SQLException e){
+			e.printStackTrace(); 
+		}
+	}
+	
+
+    public VolumeReportBean() {
+    	reportOneList = new ArrayList<ReportOne>();
+    	reportTwoList = new ArrayList<ReportTwo>();
+    	monthList = new ArrayList<String>();
+    	yearList = new ArrayList<String>();	
+    	solution_id_list = new ArrayList<String>();
+        component_id_list = new ArrayList<String>();	
+        
+        display = false;
+        print = false;
+    }
+    
+   	private ArrayList<String> GrabDistinctForColumns(String Query, Statement stmt) {
+		try {
+			ResultSet rs_loop = stmt.executeQuery(Query);
+
+			ArrayList<String> Temp = new ArrayList<String>();
+			while (rs_loop.next()) {
+				String tempString = rs_loop.getString(1);
+				if (tempString != null) {
+					Temp.add(tempString);
+				}
+			}
+			Collections.sort(Temp, String.CASE_INSENSITIVE_ORDER);
+			return Temp;
+		}
+		catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	private ArrayList<String> MakeMonths() {
+		ArrayList<String> tempArrayList = new ArrayList<String>();
+		tempArrayList.add("JAN");
+		tempArrayList.add("FEB");
+		tempArrayList.add("MAR");
+		tempArrayList.add("APR");
+		tempArrayList.add("MAY");
+		tempArrayList.add("JUN");
+		tempArrayList.add("JUL");
+		tempArrayList.add("AUG");
+		tempArrayList.add("SEP");
+		tempArrayList.add("OCT");
+		tempArrayList.add("NOV");
+		tempArrayList.add("DEC");
+
+		return tempArrayList;
+	}
+
+	private ArrayList<String> MakeYears() {
+		ArrayList<String> tempArrayList = new ArrayList<String>();
+		tempArrayList.add("2015");
+		tempArrayList.add("2014");
+		tempArrayList.add("2013");
+		tempArrayList.add("2012");
+		tempArrayList.add("2011");
+		tempArrayList.add("2010");
+
+		return tempArrayList;
+	}
+
+	private String TurnToNiceDateStart(String month, String year) {
+		// Given a month and year, it will turn into this format, ex:
+		// '01-JAN-2015'
+		String NiceDate = "'01-";
+		NiceDate += month;
+		NiceDate += "-";
+		NiceDate += year;
+		NiceDate += "'";
+		return NiceDate;
+	}
+
+	private String TurnToNiceDateEnd(String month, String year) {
+		// Given a month and year, it will turn into this format, ex:
+		// '01-JAN-2015'
+		String NiceDate = "'31-";
+		NiceDate += month;
+		NiceDate += "-";
+		NiceDate += year;
+		NiceDate += "'";
+		return NiceDate;
+	}
+
+	private String CreateSqlQueryReport1(String Solution_id, String Component_id, String NiceDate) { // NiceDate is in '01-JAN-2015' format
+		/*
+		 * select SOLUTION_ID, COMPONENT_ID, to_char(METRIC_END_TIME,'yyyy-mm')
+		 * as MONTH, sum(METRIC_VALUE) as REQUEST_COUNT from AUDIT_METRIC where
+		 * METRIC_START_TIME >= '01-JAN-2015' and METRIC_END_TIME <= (SYSDATE)
+		 * and SOLUTION_ID = 'S0228_CrmInquiryServiceWeb' and COMPONENT_ID =
+		 * 'getHistory' and METRIC_NAME = 'Daily_Entry_Count' group by
+		 * SOLUTION_ID, COMPONENT_ID, to_char(METRIC_END_TIME,'yyyy-mm') order
+		 * by SOLUTION_ID, COMPONENT_ID, to_char(METRIC_END_TIME,'yyyy-mm')
+		 */
+		String SqlQuery = "select SOLUTION_ID, COMPONENT_ID, to_char(METRIC_END_TIME,'yyyy-mm') as MONTH, sum(METRIC_VALUE) as REQUEST_COUNT from AUDIT_METRIC";
+		SqlQuery += " where METRIC_START_TIME >= ";
+		SqlQuery += NiceDate;// add the start date
+		SqlQuery += " and METRIC_END_TIME <= (SYSDATE) and SOLUTION_ID = '";
+		SqlQuery += Solution_id; //add the solution id
+		SqlQuery += "' and COMPONENT_ID = '";
+		SqlQuery += Component_id; // add the component id
+		SqlQuery += "' and METRIC_NAME = 'Daily_Entry_Count' group by SOLUTION_ID, COMPONENT_ID, to_char(METRIC_END_TIME,'yyyy-mm') order by";
+		SqlQuery += " SOLUTION_ID, COMPONENT_ID, to_char(METRIC_END_TIME,'yyyy-mm')";
+		return SqlQuery;
+	}
+
+	private String CreateSqlQueryReport2(String Solution_id, String NiceDate_start, String NiceDate_end) { // NiceDate is in '01-JAN-2015' format
+		/* REPORT TWO
+		select SOLUTION_ID, to_char(METRIC_END_TIME,'yyyy-mm') as MONTH, sum(METRIC_VALUE) as REQUEST_COUNT
+		from AUDIT_METRIC
+		where METRIC_START_TIME >= '01-JAN-2014'
+		and METRIC_END_TIME <= '31-DEC-2014'
+		and SOLUTION_ID = 'S0228_CrmInquiryServiceWeb'
+		and METRIC_NAME = 'Daily_Entry_Count'
+		group by SOLUTION_ID, to_char(METRIC_END_TIME,'yyyy-mm')
+		order by SOLUTION_ID, to_char(METRIC_END_TIME,'yyyy-mm');
+		*/
+
+		String SqlQuery = "select SOLUTION_ID, to_char(METRIC_END_TIME,'yyyy-mm') as MONTH, sum(METRIC_VALUE) as REQUEST_COUNT from AUDIT_METRIC";
+		SqlQuery += " where METRIC_START_TIME >= ";
+		SqlQuery += NiceDate_start; // add the start date
+		SqlQuery += " and METRIC_END_TIME <= ";
+		SqlQuery += NiceDate_end; //add the end date
+		SqlQuery += " and SOLUTION_ID = '";
+		SqlQuery += Solution_id; //add the solution id
+		SqlQuery += "' and METRIC_NAME = 'Daily_Entry_Count' group by SOLUTION_ID, to_char(METRIC_END_TIME,'yyyy-mm') order by";
+		SqlQuery += " SOLUTION_ID, to_char(METRIC_END_TIME,'yyyy-mm')";
+		return SqlQuery;
+	}
+
+}

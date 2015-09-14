@@ -1,0 +1,427 @@
+//The following variables are declared so that it is easier to switch domains (which is needed for our ajax calls to our rest service)
+var local_url = "http://localhost:8080/AjaxController/AjaxController/";
+var xerox_url = "http://usa0300lv312.apps.mc.xerox.com:8080/AjaxController/AjaxController/";
+var replace_url = local_url; //Pick local_url or xerox_url 
+//Don't forget to change SUBMIT 2 button in here at the bottom
+
+
+$(document).ready(function() {
+	//initialization of the page
+	$('#loading-start_year-click').hide(); //underneath component
+	$('#loading-end_year-click').hide();
+	$('#loading-start_month-click').hide();
+	$('#loading-end_month-click').hide();
+	$('#loading-component-click').hide();
+	
+	$('#loading-start_day-click').hide();
+	$('#loading-end_day-click').hide();
+	populateSolutionList(); //puts the options for the Solution Drop-Down list
+	
+	$('#solution_param').change(function () {
+		populateComponentList();
+	});
+	
+	$('#component_param').change( function() {
+		update_year_and_clear_month( $('#yearparam_start'), $('#monthparam_start') , $('#loading-start_year-click'));
+		
+		update_year_and_clear_month( $('#yearparam_end'), $('#monthparam_end') , $('#loading-end_year-click'));
+	});
+	
+	//these will update the months
+	$('#yearparam_start').change(function() { //this will update the month selection list when you change a year 
+		// console.log("Changing yearparam_start and updating month");
+		update_month($('#monthparam_start'), $('#yearparam_start'), $('#loading-start_month-click'));
+//		checkToSee(); //this checks to see if we should draw the google chart
+	});
+
+	$('#yearparam_end').change(function() { //exactly the same as the above function
+		// console.log("Changing yearparam_end and updating month");
+		update_month($('#monthparam_end'), $('#yearparam_end'), $('#loading-end_month-click'));
+//		checkToSee(); //this checks to see if we should draw the google chart
+	});
+	
+	
+	
+
+	
+	//these will update the day 
+	$('#monthparam_start').change(function() { //this will update the month selection list when you change a year 
+		 console.log("updating day starttttttttttt");
+		update_day( $('#dayparam_start'), $('#monthparam_start'), $('#yearparam_start'), $('#loading-start_month-click'));
+//		function update_day(day_element, month_element, year_element, loading_pic) {
+//		checkToSee(); //this checks to see if we should draw the google chart
+	});
+
+	$('#monthparam_end').change(function() { //exactly the same as the above function
+		 console.log("updating month starttttttttttttttttttttttttttttttt");
+		update_day( $('#dayparam_end'), $('#monthparam_end'), $('#yearparam_end'), $('#loading-end_month-click'));
+//		checkToSee(); //this checks to see if we should draw the google chart
+	});
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	var chart = new google.visualization.LineChart(document.getElementById('chartdiv'));
+	$('#Submit7').click(function() {
+		
+		var temp_url = "http://localhost:8080/AjaxController/AjaxController/";
+		temp_url += "Report7";
+		chart = new google.visualization.LineChart(document.getElementById('chartdiv'));
+		
+		$.ajax({
+			type: 'GET',
+			dataType: 'json',
+			url: temp_url,
+			success: function(response) {
+				console.log(response);
+				console.log("We were able to grab report 7");
+				drawchart(response);
+				console.log("We are about to print the chart");
+			},
+			error: function() {
+				alert("Error loading data! Please try again.");
+			}
+		});
+	});
+	
+$('#column').click(function() {
+		
+		var temp_url = "http://localhost:8080/AjaxController/AjaxController/";
+		temp_url += "Report7";
+		chart = new google.visualization.ColumnChart(document.getElementById('chartdiv'));
+		
+		$.ajax({
+			type: 'GET',
+			dataType: 'json',
+			url: temp_url,
+			success: function(response) {
+				console.log(response);
+				console.log("We were able to grab report 7");
+				drawchart(response);
+				console.log("We are about to print the chart");
+			},
+			error: function() {
+				alert("Error loading data! Please try again.");
+			}
+		});
+	});
+
+
+	
+
+
+
+
+		
+});
+
+function drawchart(dataValues) {
+	// Callback that creates and populates a data table,  
+	// instantiates the pie chart, passes in the data and  
+	// draws it.  
+	  var data = new google.visualization.DataTable();
+
+	data.addColumn('string', 'Hour of the Day');
+	data.addColumn('number', 'Error');
+	data.addColumn('number', 'Total Request Count');
+	// $.each(dataValues, function(k,v) {
+	// 	var original = dataValues[k].DATE;
+	// 	var date = original.substring(0,2);
+	// 	data.addRow([ parseInt(date), parseInt(dataValues[k].ERROR_COUNT), parseInt(dataValues[k].REQUEST_COUNT)]);
+	// 	console.log( parseInt(dataValues[k].REQUEST_COUNT) );
+	// });
+
+	$.each(dataValues, function(k,v) {
+		// data.addRow([ parseInt(dataValues[k].HOUR), parseInt(dataValues[k].ERROR_COUNT), parseInt(dataValues[k].REQUEST_COUNT)]);
+		data.addRow([ dataValues[k].HOUR, parseInt(dataValues[k].ERROR_COUNT), parseInt(dataValues[k].REQUEST_COUNT)]);
+	});
+			
+	// Instantiate and draw our chart, passing in some options  
+//	var chart = new google.visualization.LineChart(document.getElementById('chartdiv'));
+			
+	var options = {
+			colors: ['#dc3912', '#3366cc'],
+			 vAxes: {0: {logScale: false, title: 'Errors'},
+		            1: {logScale: false, title: 'Total Requests' }},
+		            
+		            series:{
+		                0:{targetAxisIndex:0},
+		                1:{targetAxisIndex:1}
+//		                2:{targetAxisIndex:1}
+		             },
+		                   
+
+			title: 'Solution: ' + dataValues[0].SOLUTION_ID + ', Component:' + dataValues[0].COMPONENT_ID + ", Errors and Request Counts (July-1-2015 to July-24-2015)",
+			titlePosition: 'in',
+			pointSize: 10,
+				chartArea: {
+						left: 115,
+						top: 10,
+						width: '80%',
+						height: '80%'
+					},
+				hAxis:{
+					title: 'Time(EST)',
+					gridlines:{
+						color: '#333',
+						count: 4
+					}
+				},
+				
+				vAxis:{
+					title: 'Errors',
+					gridlines:{
+						color: '#333',
+						count: 4
+					}
+				},
+				
+//	          curveType: 'function',
+	          legend: { position: 'bottom' }
+	};
+	 /*
+	var formatter = new google.visualization.NumberFormat({
+		groupingSymbol: ',',
+		fractionDigits: 0
+	});
+	formatter.format(data, 1);
+	*/
+	chart.draw(data, options);
+}//end of drawchart()
+
+
+function populateSolutionList() {
+	var $sp = $('#solution_param');
+
+	var temp_url = replace_url + "GenerateSolutionList";
+
+	$.ajax({
+		beforeSend: function() {
+			$('#loading-solution-click').show(); //show loading animation
+		},
+		url: temp_url,
+		type: 'GET',
+		dataType: 'json',
+		success: function(order) {
+			// $sp.append(new Option("Please select an option", "")); //append Please select an option since we have a succesful AJAX call
+			$sp.append($('<option>', {value:""}).text("Please select an option"));
+			$.each(order, function(key, value) { //loop through and populate the option with the text and value from the JSON array
+				$sp.append($('<option>', {
+					value: value
+				}).text(value));
+			});
+		},
+		error: function() {
+			alert("There is an error in populateSolutionList()");
+		},
+		complete: function() {
+			$('#loading-solution-click').hide(); //hide loading animation
+		}
+	}); //end of ajax call
+} //end of populateSolutionList
+
+function populateComponentList() {
+	
+	console.log("First call to populateComponentList()");
+	var $sp = $('#solution_param');
+	var $cp = $('#component_param');
+	
+	console.log("The value of the solution_param is:" + $sp.val());
+	
+	var temp_url = replace_url + "GenerateCompListForReport7/" + $sp.val();//you will want to add the solution as the parameter to the url
+	$cp.empty();//empty out the component list
+	
+
+	$.ajax({
+		beforeSend: function() {
+			$('#loading-component-click').show(); //show loading animation
+		},
+		url: temp_url,
+		type: 'GET',
+		dataType: 'json',
+		success: function(order) {
+			if (jQuery.isEmptyObject(order)) { //returns true if it is empty
+				// $cp.append(new Option("No options", ""));
+				// $sp.append($('<option>', {value:""}).text("Please select an option"));
+				$cp.append($('<option>', {value:""}).text("No options"));
+				$('#yearparam_start').empty();
+				$('#monthparam_start').empty();
+				
+				$('#yearparam_end').empty();
+				$('#monthparam_end').empty();
+				
+				// $('#yearparam_start').append(new Option("No options", ""));
+				$('#yearparam_start').append($('<option>', {value:""}).text("No options"));
+				// $('#monthparam_start').append(new Option("No options", ""));
+				$('#monthparam_start').append($('<option>', {value:""}).text("No options"));
+				
+				$('#yearparam_end').append($('<option>', {value:""}).text("No options"));
+				
+				$('#monthparam_end').append($('<option>', {value:""}).text("No options"));
+			} else {
+				// $cp.append(new Option("Please select an option", ""));
+				$cp.append($('<option>', {value:""}).text("Please select an option"));
+				$.each(order, function(key, value) {
+					console.log("The values of it is:" + order[key].value);
+					$cp.append($('<option>', {
+						value: value
+					}).text(value));
+				});
+			} //end of else
+		}, //end of success
+		error: function() {
+			alert("There is an error in populateComponentList()");
+		},
+		complete: function() {
+			$('#loading-component-click').hide(); //hide loading animation
+		}
+	}); //end of ajax call
+	
+	
+	
+	
+}//end of populateComponentLIst
+
+
+function update_year_and_clear_month(year, month, loading) { //this is helper function for when component param changes, update months and year
+	var solution1 = $('#solution_param').val();
+	var compo = $('#component_param').val();
+
+	var temp_url = replace_url + "GenerateYearListForReport7"; //generate URL to REST call
+	temp_url += "/";
+	temp_url += solution1;
+	temp_url += "/";
+	temp_url += compo;
+
+	year.empty(); //clear out the year options
+	month.empty(); //clear out the month options
+
+	$.ajax({
+		url: temp_url,
+		beforeSend: function() {
+			loading.show(); //used to show the loading icon
+		},
+		type: 'GET',
+		dataType: 'json',
+		success: function(order) {
+			if (jQuery.isEmptyObject(order)) { //checks to see whether there are valid years
+				// year.append(new Option("No options", ""));
+				year.append($('<option>', {value:""}).text("No options"));
+				// month.append(new Option("No options", ""));
+				month.append($('<option>', {value:""}).text("No options"));
+			} else { //there are valid years!!
+				// year.append(new Option("Please select an option", "")); //This option has a name of "Please select an optoin and value of ""
+				year.append($('<option>', {value:""}).text("Please select an option"));
+				$.each(order, function(key, value) { //loop through json array and populate the year list
+					year.append($('<option>', {
+						value: value
+					}).text(value));
+				});
+			} //end of else
+		}, //end of success
+		error: function() {
+			alert("There is an error in update_year_and_clear_month");
+		},
+		complete: function() {
+			loading.hide(); //hide the loading element
+		}
+	}); //end of ajax call
+	return false;
+} //end of update_year_and_clear_month
+
+
+
+function update_month(month_element, year_element, loading_pic) {
+	var $sp = $('#solution_param'); //make a variable to hold solution param
+	
+	var comp = $('#component_param').val();
+	var solution = $sp.val(); //grab parameter values
+	var year = year_element.val();
+
+	var temp_url = replace_url + "GenerateMonthList7/"; //create url to rest service
+	temp_url += solution + "/";
+	temp_url += comp + "/";
+	temp_url += year;
+
+	month_element.empty(); //empty the month options
+
+	$.ajax({
+		beforeSend: function() {
+			loading_pic.show(); //show loading animation
+		},
+		url: temp_url,
+		type: 'GET',
+		dataType: 'json',
+		success: function(order) {
+			// month_element.append(new Option("Please select an option", "")); //on success, add the string
+			month_element.append($('<option>', {value:""}).text("Please select an option"));
+
+			$.each(order, function(key, value) { //loop through and add corresponding options with text and value of option from the JSON array
+				month_element.append($('<option>', {
+					value: value
+				}).text(value));
+			});
+		},
+		error: function() {
+			alert("There is an error in update_month()");
+		},
+		complete: function() {
+			loading_pic.hide(); //hide loading animation
+		}
+	}); //end of ajax call(document.ready())
+}
+
+function update_day(day_element, month_element, year_element, loading_pic) {
+	var $sp = $('#solution_param'); //make a variable to hold solution param
+	
+	var comp = $('#component_param').val();
+	var solution = $sp.val(); //grab parameter values
+	var year = year_element.val();
+	var month = month_element.val();
+	
+
+	var temp_url = replace_url + "GenerateDayList7/"; //create url to rest service
+	temp_url += solution + "/";
+	temp_url += comp + "/";
+	temp_url += year + "/";
+	temp_url += month;
+	console.log("THE url inside update_day in report 7 is:" + temp_url);
+
+	day_element.empty(); //empty the month options
+
+	$.ajax({
+		beforeSend: function() {
+			loading_pic.show(); //show loading animation
+		},
+		url: temp_url,
+		type: 'GET',
+		dataType: 'json',
+		success: function(order) {
+			// month_element.append(new Option("Please select an option", "")); //on success, add the string
+			day_element.append($('<option>', {value:""}).text("Please select an option"));
+
+			$.each(order, function(key, value) { //loop through and add corresponding options with text and value of option from the JSON array
+				day_element.append($('<option>', {
+					value: value
+				}).text(value));
+			});
+		},
+		error: function() {
+			alert("There is an error in update_day()");
+		},
+		complete: function() {
+			loading_pic.hide(); //hide loading animation
+		}
+	}); //end of ajax call(document.ready())
+}

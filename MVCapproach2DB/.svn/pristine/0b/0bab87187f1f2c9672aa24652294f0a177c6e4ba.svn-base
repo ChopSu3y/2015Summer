@@ -1,0 +1,145 @@
+<!-- <%@ page import="com.xerox.isp.volumereports.VolumeReportBeanLocal" %> -->
+
+
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+pageEncoding="ISO-8859-1"%>
+
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+	<link rel="stylesheet" type="text/css" href="NewFile.css">
+
+
+	<!--Load the AJAX API-->
+	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+
+	<script src="jquery-1.11.3.js"></script>
+	<script src="first_javascript.js"></script>
+
+	<script type="text/javascript">  
+      // Global variable to hold data  
+      // Load the Visualization API and the piechart package.  
+      
+      google.load('visualization', '1', { packages: ['corechart'] });//this is for the bar chart
+     // google.load('visualization', '1.1', {packages:['table']});//this is for the table
+      //google.setOnLoadCallback(drawTable);//this is supposed to be for the table, but didn't use
+
+      
+      </script>
+	<script src="jquery.blockUI.js" ></script>
+
+      <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+      <title>First Report!</title>
+  </head>
+  <body>
+
+  	<h1>
+  		First Report!
+  	</h1>
+
+
+  	<h1>
+  		<c:out value="${text}" />
+  	</h1>
+
+
+
+ 
+  		<p></p>
+  		Solution<span><strong>:</strong></span> <select id="solution_param"
+  		name="solution_param" style="max-width: 90%">
+				<!-- 
+			<option value="">Please select a solution_id</option>
+		
+			<c:forEach items="${report1bean.solution_id_list}" var="UniqueList">
+				<option value="${UniqueList}">${UniqueList}</option>
+			</c:forEach>
+			!-->
+		</select>
+		<div id="loading-solution-click">
+			<img src="loading.gif" />
+		</div>
+
+
+		<p></p>
+		Component<span><strong>:</strong></span> <select id="component_param"
+		name="component_param" style="max-width: 90%">
+		<option value="">Please select a component_id</option>
+
+	</select>
+	<div id="loading-component-click">
+		<img src="loading.gif" />
+	</div>
+
+		<!-- 
+		Component_id <select id="component_param" name="component_param"
+			style="max-width: 90%">
+			<c:forEach items="${report1bean.component_id_list}"
+				var="SecondParamList">
+				<option value="${SecondParamList}">${SecondParamList}</option>
+			</c:forEach>
+		</select>
+		
+		
+	-->
+	<p></p>
+	Start Year<span><strong>:</strong></span> <select id="yearparam_start"
+	name="yearparam_start" style="max-width: 90%">
+	<option value="">Please select a year</option>
+</select>
+<div id="loading-year-click">
+	<img src="loading.gif" />
+</div>
+
+<p></p>
+Start Month<span><strong>:</strong></span> <select
+id="monthparam_start" name="monthparam_start" style="mGax-width: 90%">
+<option value="">Please select a month</option>
+</select>
+<p></p>
+<input type="submit" name="Submit2" value="Report2" id="Submit2" />
+
+<!--
+ <input type="submit" name="FIRST" value="Submit" id="submit_first" />
+ !-->
+
+<!-- <input type="submit" name="submit_paragraph1" value="TestDataConnection" id="submit_paragraph1" /> -->
+
+
+
+
+
+<p></p>
+<div id="chartdiv" resize:both style="width: 600px; height: 350px;"></div>
+
+ <div id="table_div" style="width: 600px; height: 350px;"></div>
+
+	<!--  
+	<p>
+		<a href="http://www.google.com/">
+			<button>Visit Google</button>
+		</a>
+	</p>
+-->
+
+
+
+		<!--  
+	<form action="DataBaseServlet" method="post">
+		<input type="submit" name="SECOND" value="Click for Report 2"></input>
+	</form>
+	!-->
+
+
+	
+
+<!--	
+	<input type="submit" name="API Documentation" value="API Documentation" id="submit_paragraph1" />
+	<p id="last_paragraph"> </p>
+
+	!-->
+
+
+</body>
+</html>

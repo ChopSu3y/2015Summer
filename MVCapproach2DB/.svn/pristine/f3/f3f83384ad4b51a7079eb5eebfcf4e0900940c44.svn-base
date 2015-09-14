@@ -1,0 +1,233 @@
+package servletBean;
+
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+//import javassist.bytecode.Descriptor.Iterator;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.google.gson.Gson;
+
+import java.util.ArrayList;
+import java.util.Collections;
+//this is for the map
+import java.util.HashMap;
+
+//import com.xerox.isp.volumereports.ReportOne;
+import com.xerox.isp.volumereports.VolumeReportBean;//volumeReportBean
+
+public class SecondColumn extends HttpServlet {
+
+	private static final long serialVersionUID = 1L;
+
+	public ArrayList<String> Convert2Month(ArrayList<String> ListOfMonths){
+		ArrayList<String> ReturnThis = new ArrayList<String>();
+		for (int i = 0; i < ListOfMonths.size(); i++) {
+			if (ListOfMonths.get(i).equals("01")) {
+				ReturnThis.add("JAN");
+			}
+			else if (ListOfMonths.get(i).equals("02")) {
+				ReturnThis.add("FEB");
+			}
+			else if (ListOfMonths.get(i).equals("03")) {
+				ReturnThis.add("MAR");
+			}
+			else if (ListOfMonths.get(i).equals("04")) {
+				ReturnThis.add("APR");
+			}
+			else if (ListOfMonths.get(i).equals("05")) {
+				ReturnThis.add("MAY");
+			}
+			else if (ListOfMonths.get(i).equals("06")) {
+				ReturnThis.add("JUN");
+			}
+			else if (ListOfMonths.get(i).equals("07")) {
+				ReturnThis.add("JUL");
+			}
+			else if (ListOfMonths.get(i).equals("08")) {
+				ReturnThis.add("AUG");
+			}
+			else if (ListOfMonths.get(i).equals("09")) {
+				ReturnThis.add("SEP");
+			}
+			else if (ListOfMonths.get(i).equals("10")) {
+				ReturnThis.add("OCT");
+			}
+			else if (ListOfMonths.get(i).equals("11")) {
+				ReturnThis.add("NOV");
+			}
+			else {
+				ReturnThis.add("DEC");
+			}
+		}//end of for loop
+		return ReturnThis;
+	}//end of function
+	
+
+	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+		if(request.getParameter("update_month") != null){
+			System.out.println("Second Column, you have changed the year!!!");
+			
+			String solution_id = request.getParameter("solution");
+			String component_id = request.getParameter("component");
+			String start_year = request.getParameter("start_year");
+			String json = null;
+			
+			try{
+				Connection conn_one = DriverManager.getConnection("jdbc:oracle:thin:@usa7061lv1137.na.xerox.net:1532/ISPSVC", "ispaudit", "ISPu$a0300lvStg");
+				Statement stmt_one = conn_one.createStatement();
+				ResultSet rs_one;	
+//				select to_char(metric_start_time,'mm') from audit_metric where solution_id = 'S0228_CrmInquiryServiceWeb' and component_id ='getHistory' and METRIC_NAME = 'Daily_Entry_Count' and to_char(METRIC_START_TIME,'yyyy') = '2015' group by to_char(METRIC_START_TIME,'MON')
+
+				String Query = "select to_char(metric_start_time, 'mm') from audit_metric where solution_id = '";
+				Query += solution_id ;
+				Query += "' and component_id ='";
+				Query += component_id;
+				Query += "' and METRIC_NAME = 'Daily_Entry_Count' and to_char(METRIC_START_TIME,'yyyy') = '";
+				Query += start_year; 
+				Query += "' group by to_char(METRIC_START_TIME,'mm')";
+
+//				System.out.println("The query inside SecondColumn's if statement is:" + Query);
+				rs_one = stmt_one.executeQuery(Query);
+			
+				ArrayList<String> ListOfMonths = new ArrayList<String>();
+				while ( rs_one.next() ){//getting the list on 'mm' format ex: jun is: 06
+					String add_this = rs_one.getString(1);
+//					System.out.println("Add_this is:" + add_this);
+					ListOfMonths.add( add_this);
+				}
+				
+				Collections.sort(ListOfMonths);//sort the numbers that are in 'mm' format
+				json = new Gson().toJson( Convert2Month(ListOfMonths));//convert 'mm' format to months
+				response.setContentType("application/json");
+				response.setCharacterEncoding("UTF-8");
+				response.getWriter().write(json);
+			}
+			catch (SQLException e){
+				e.printStackTrace();
+			}
+		}
+		
+		
+		else if( request.getParameter("update_year") != null){
+			System.out.println("Second Column, you have changed the component_id");
+			
+			HashMap<String, String> ListOfYears = new HashMap<String, String>();
+
+			String solution_id = request.getParameter("solution");
+			String component_id = request.getParameter("component");
+	
+			try{
+				Connection conn_one = DriverManager.getConnection("jdbc:oracle:thin:@usa7061lv1137.na.xerox.net:1532/ISPSVC", "ispaudit", "ISPu$a0300lvStg");
+				Statement stmt_one = conn_one.createStatement();
+				ResultSet rs_one;	
+
+				String Query = "select min(to_char(metric_start_time, 'yyyy')) from audit_metric where solution_id = '";
+				Query += solution_id ;
+				Query += "' and component_id ='";
+				Query += component_id;
+				Query += "' and metric_name = 'Daily_Entry_Count' group by to_char(METRIC_START_TIME,'yyyy')";
+//				System.out.println("The query inside SecondColumn's else if statement is:" + Query);
+				
+				rs_one = stmt_one.executeQuery(Query);
+				
+				while ( rs_one.next() ){
+					String add_this = rs_one.getString(1);
+//					System.out.println("Add_this is:" + add_this);
+					ListOfYears.put(add_this, add_this);
+				}
+			}
+
+			catch (SQLException e){
+				e.printStackTrace();
+			}
+
+			String json = new Gson().toJson(ListOfYears);
+			response.setContentType("application/json");
+			response.setCharacterEncoding("UTF-8");
+			response.getWriter().write(json);
+					
+		}
+		else if( request.getParameter("getChartData") != null){
+			System.out.println("Second Column, you have selected a month, so making the chart!");
+			
+    	  	String solution = request.getParameter("solution");//grab all the parameters
+    	  	String component = request.getParameter("component");
+    	  	String year = request.getParameter("year");
+    	  	String month = request.getParameter("month");
+    	  	
+    		try{
+    			Connection conn_one = DriverManager.getConnection("jdbc:oracle:thin:@usa7061lv1137.na.xerox.net:1532/ISPSVC", "ispaudit", "ISPu$a0300lvStg");
+    			Statement stmt_one = conn_one.createStatement();
+    			ResultSet rs_one;	
+    			
+    				String NiceDate_one = VolumeReportBean.TurnToNiceDateStart(month, year);
+    				String Query_one = VolumeReportBean.CreateSqlQueryReport1(solution, component, NiceDate_one); 
+    				
+    				rs_one = stmt_one.executeQuery(Query_one);
+    		
+    	    	  	ArrayList<ReportOneChart> ListForReportOne = new ArrayList<ReportOneChart>();
+
+    				while(rs_one.next()){
+    					ReportOneChart tempReportOneChart = new ReportOneChart();
+    					tempReportOneChart.setMonth(rs_one.getString(3));
+    					tempReportOneChart.setRequest(rs_one.getString(4));
+    					ListForReportOne.add(tempReportOneChart);
+    				}
+    			conn_one.close();
+
+        		String json = new Gson().toJson(ListForReportOne);
+        		System.out.print("The json string is:" + json);
+
+        		response.setContentType("application/json");
+        		response.setCharacterEncoding("UTF-8");
+        		response.getWriter().write(json);
+    			return;
+    		}
+
+    		catch (SQLException e){
+    			e.printStackTrace();
+    		}
+		}//end of getChartData else if
+		else{
+		System.out.println("Second Column, You have changed solution, will update component list");
+		String solution_id = request.getParameter("solution");
+	
+		HashMap<String, String> ListOfComponent_IDS = new HashMap<String, String>();
+		String json = null;
+		
+		try{
+			Connection conn_one = DriverManager.getConnection("jdbc:oracle:thin:@usa7061lv1137.na.xerox.net:1532/ISPSVC", "ispaudit", "ISPu$a0300lvStg");
+			Statement stmt_one = conn_one.createStatement();
+			ResultSet rs_one;	
+		
+			String Query = "select distinct(COMPONENT_ID) from AUDIT_METRIC where SOLUTION_ID = '";
+			Query+=solution_id;
+			Query+="'";
+			rs_one = stmt_one.executeQuery(Query);
+			
+			while ( rs_one.next() ){
+				String add_this = rs_one.getString(1);
+				ListOfComponent_IDS.put(add_this, add_this);
+			}
+		}
+		catch (SQLException e){
+			e.printStackTrace();
+		}
+
+		json = new Gson().toJson(ListOfComponent_IDS);
+		response.setContentType("application/json");
+		response.setCharacterEncoding("UTF-8");
+		response.getWriter().write(json);
+		}//end of else statement
+	}//end of do get
+}//end of class

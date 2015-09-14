@@ -1,0 +1,144 @@
+$(document).ready(function(){
+
+	$('#loading-component-click').hide();//underneath component
+	$('#loading-year-click').hide();
+	$('#loading-solution-click').hide();//underneath solution
+
+	$('#solution_param').change(function(){//this will update the component_id
+		update_comp();
+	});
+	
+	$('#component_param').change(function(){//this will update the month and year date
+		update_year();
+	});
+	
+	$('#yearparam_start').change(function(){//this will update the month
+		update_month();
+	});
+
+	function update_comp(){
+		var solution = $('#solution_param').val();
+		console.log("solution param is:" + solution);
+		//alert("You have changed solution_id");
+		
+		var $cp = $('#component_param');
+		console.log("clearing out component param list");
+		$cp.empty();//clear out the select options
+		
+		$.ajax({
+			url: "SecondColumn",
+			beforeSend: function(){
+				$('#loading-solution-click').show();
+			},
+			type: 'GET',
+	        contentType: "application/json; charset=utf-8",
+			dataType: 'json',
+			data: {'solution' : solution},
+			success: function(order){
+				if(jQuery.isEmptyObject(order)){
+					$cp.append("<option> No options </option>");
+					$('#yearparam_start').append("<option> No options </option>");
+					$('#monthparam_start').append("<option> No options </option>");
+				}
+				else{
+					$cp.append("<option> Please select an option </option");
+					$.each(order, function(key, value) {   
+							$('#component_param')
+							.append($('<option>', { value : key })
+							.text(value)); 
+					});
+				}//end of else
+			},//end of success
+			complete: function() {
+				$('#loading-solution-click').hide();
+			}
+		});
+		return false;
+	}
+
+	function update_year(){//this is helper function for when component param changes, update months and year
+		console.log("You've changed component_param");
+
+		var solution1 = $('#solution_param').val();
+		var component1 = $('#component_param').val();
+		var $start_year = $('#yearparam_start');
+		
+		$start_year.empty();//clear out the year options
+		$('#monthparam_start').empty();//clear out the month options
+
+		$.ajax({
+			url: "SecondColumn",
+			beforeSend: function(){
+				$('#loading-component-click').show();//used to show the loading icon
+			},
+			type: 'GET',
+	        contentType: "application/json; charset=utf-8",
+			dataType: 'json',
+			data: {'solution' : solution1, 'component' : component1, 'update_year' : "yes"},
+
+			success: function(order){
+				if(jQuery.isEmptyObject(order)){//checks to see whether there are valid years
+					console.log("It is empty!!!");
+					$('#yearparam_start').append("<option> No options </option>");
+					$('#monthparam_start').append("<option> No options </option>");	
+				}
+				else{//there are valid years!!
+					$('#yearparam_start').append("<option> Please select an option </option>");
+					$('#monthparam_start').append("<option> Please select an option </option>");
+
+					$.each(order, function(key, value) {   
+							$('#yearparam_start')
+							.append($('<option>', { value : key })
+							.text(value)); 
+					});
+				}//end of else
+			},//end of success
+			complete: function() {
+				$('#loading-component-click').hide();//hide the loading element
+			}
+		});
+		return false;
+	}
+
+	
+	//update month, similar to the one above
+	function update_month(){//this is helper function for when component param changes, update months and year
+		console.log("You've changed start year");
+
+		var solution2 = $('#solution_param').val();
+		var component2 = $('#component_param').val();
+		var start_year2 = $('#yearparam_start').val();
+
+		var $start_month2 = $('#monthparam_start');
+		$start_month2.empty();//clear out the year options
+		
+		$.ajax({
+			url: "SecondColumn",
+			beforeSend: function(){
+				$('#loading-year-click').show();
+			},
+			type: 'GET',
+	        contentType: "application/json; charset=utf-8",
+			dataType: 'json',
+			data: {'solution' : solution2, 'component' : component2, 'start_year' : start_year2, 'update_month' : "yes"},
+
+			success: function(order){
+					$('#monthparam_start').append("<option> Please select an option </option>");
+					$.each(order, function(key, value) {   
+							$('#monthparam_start')
+							.append($('<option>', { value : value })
+							.text(value)); 
+					});
+			},
+			complete: function() {
+				$('#loading-year-click').hide();
+			}
+		});
+		return false;
+	}
+});
+
+
+
+
+

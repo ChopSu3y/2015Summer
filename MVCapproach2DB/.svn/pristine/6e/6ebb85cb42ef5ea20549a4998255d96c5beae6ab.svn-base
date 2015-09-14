@@ -1,0 +1,12 @@
+@CHARSET "ISO-8859-1";
+
+::selection {
+  background: #ffb7b7; /* WebKit/Blink Browsers */
+}
+::-moz-selection {
+  background: #ffb7b7; /* Gecko Browsers */
+}
+
+body {
+    background-color: lightblue;
+}

@@ -1,0 +1,1036 @@
+package com.xerox.isp.volumereports;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+
+import javax.ejb.Stateless;
+
+
+
+//import servletBean.ReportOne;
+import com.xerox.isp.volumereports.ReportOne;
+
+/**
+ * Session Bean implementation class VolumeReportBean
+ */
+@Stateless
+public class VolumeReportBean implements VolumeReportBeanLocal {
+	/* the Production connection
+		 Wednesday, July 22, 2015 10:46 AM
+		 Host - usa0300lv1196.na.xerox.net
+		 Port – 1562
+		 Service Name – ISPSVC
+		  
+		 Id: ispauditro
+		 Pass: XeroxEipc#1234
+	*/
+	
+	/*
+	 * this is the development connection
+	//DriverManager.getConnection("jdbc:oracle:thin:@usa7061lv1137.na.xerox.net:1532/ISPSVC", "ispaudit", "ISPu$a0300lvStg");	 
+ 
+	private static String host = "usa7061lv1137.na.xerox.net";
+	private static String port = "1532";
+	private static String service_name = "ISPSVC";
+	
+	private static String id = "ispaudit";
+	private static String pass = "ISPu$a0300lvStg";
+		
+	private static String first_param="jdbc:oracle:thin:@" + host + ":" + port + "/" + service_name;
+	private static String second_param = id;
+	private static String third_param = pass;	
+	*/
+	
+	private static String host = "usa0300lv1196.na.xerox.net";
+	private static String port = "1562";
+	private static String service_name = "ISPSVC";
+	
+	private static String id = "ispauditro";
+	private static String pass = "XeroxEipc#1234";
+		
+	private static String first_param="jdbc:oracle:thin:@" + host + ":" + port + "/" + service_name;
+	private static String second_param = id;
+	private static String third_param = pass;
+	
+	private static Connection DriverManager_getConnectionHelper(String first_param, String second_param, String third_param){
+//private static void DriverManager_getConnectionHelper(String first_param, String second_param, String third_param){
+	
+//		DriverManager.getConnection("jdbc:oracle:thin:@usa7061lv1137.na.xerox.net:1532/ISPSVC", "ispaudit", "ISPu$a0300lvStg");\
+		/*
+		System.out.println("Inside DriverManger_getConnectionHelper");
+		System.out.println("first param is:" + first_param);
+		System.out.println("second param is:" + second_param);
+		System.out.println("third param is:" + third_param);
+		*/
+		
+		try{
+			Connection temp_connection = DriverManager.getConnection(first_param, second_param, third_param);
+//			System.out.println("Done getting connection using DriverManager_getConnectionHelper");
+			return temp_connection;
+		}
+		catch(SQLException e){
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+
+	public static ArrayList<String> generateSolutionList(){//generates solution list for Report 1
+//		DriverManager_getConnectionHelper(first_param, second_param, third_param);
+		
+		ArrayList<String> tempSolList = new ArrayList<String>();
+		String unique_sol_query = "select distinct(SOLUTION_ID) from ISPAUDIT.AUDIT_METRIC";
+		
+		try{
+//			System.out.println("calling generateSolutionList with the new DATABASE CONNECTION");
+			Connection conne = DriverManager_getConnectionHelper(first_param, second_param, third_param);	
+			System.out.println("CONNECTED WITH THE NEW DATABASE CONNECTION");
+	
+			Statement stmt = conne.createStatement();
+			tempSolList = GrabDistinctSolutionList(unique_sol_query, stmt);
+		}
+		catch (SQLException e){
+			e.printStackTrace();
+		}
+		return tempSolList;
+	}//end of generateSolutionList
+
+	public static ArrayList<String> generateComponentList(String solution){//generates component list for Report 1
+		ArrayList<String> ListOfComponent_IDS = new ArrayList<String>();
+		
+		try{
+			Connection conn_one = DriverManager_getConnectionHelper(first_param, second_param, third_param);
+			Statement stmt_one = conn_one.createStatement();
+			ResultSet rs_one;	
+	
+			//Create SQL query
+			String Query = "select distinct(COMPONENT_ID) from ISPAUDIT.AUDIT_METRIC where SOLUTION_ID = '";
+			Query+=solution;
+			Query+="'";
+			
+			rs_one = stmt_one.executeQuery(Query);
+			
+			while ( rs_one.next() ){
+				String add_this = rs_one.getString(1);
+				ListOfComponent_IDS.add( add_this);
+			}
+		}
+		catch (SQLException e){
+			e.printStackTrace();
+		}
+		return ListOfComponent_IDS;
+	}//end of generateComponentList
+	
+	public static ArrayList<String> generateYearList(String solution, String component){//generates year list for Report1 
+		ArrayList<String> ListOfYears = new ArrayList<String>();
+		try{
+			Connection conn_one = DriverManager_getConnectionHelper(first_param, second_param, third_param);
+			Statement stmt_one = conn_one.createStatement();
+			ResultSet rs_one;	
+
+			//create SQL query
+			String Query = "select min(to_char(metric_start_time, 'yyyy')) from ISPAUDIT.AUDIT_METRIC where solution_id = '";
+			Query += solution;
+			Query += "' and component_id ='";
+			Query += component;
+			Query += "' and metric_name = 'Daily_Entry_Count' group by to_char(METRIC_START_TIME,'yyyy')";
+			
+			rs_one = stmt_one.executeQuery(Query);
+			
+			while ( rs_one.next() ){
+				String add_this = rs_one.getString(1);
+				ListOfYears.add(add_this);
+			}
+			Collections.sort(ListOfYears);
+			return ListOfYears;
+		}
+
+		catch (SQLException e){
+			e.printStackTrace();
+			return null;
+		}
+	}//end of generateYearList
+	
+	public static ArrayList<String> generateYearListForReport2(String solution){//generate syear list for Report2
+		try{
+			Connection conn_one = DriverManager_getConnectionHelper(first_param, second_param, third_param);
+			Statement stmt_one = conn_one.createStatement();
+			ResultSet rs_one;	
+
+			/*
+			select min(to_char(metric_start_time, 'yyyy')) from audit_metric 
+			where solution_id = 'S0224_YankeeSOFConfirmServiceESB'
+			and METRIC_NAME = 'Daily_Entry_Count'
+			group by to_char(METRIC_start_TIME,'yyyy')
+			order by to_char(METRIC_start_TIME,'yyyy');
+			*/
+			String Query = "select min(to_char(metric_start_time, 'yyyy')) from ISPAUDIT.AUDIT_METRIC ";
+			Query += "where solution_id = '";
+			Query += solution;
+			Query += "' and metric_name = 'Daily_Entry_Count' group by to_char(METRIC_start_TIME,'yyyy') order by to_char(METRIC_start_TIME,'yyyy')";
+	
+			rs_one = stmt_one.executeQuery(Query);
+			ArrayList<String> ListOfYears2 = new ArrayList<String>();
+		
+			while ( rs_one.next() ){//loop through result set to grab the corresponding values
+				String add_this = rs_one.getString(1);
+				ListOfYears2.add(add_this);
+			}
+			return ListOfYears2;
+		}
+
+		catch (SQLException e){
+			e.printStackTrace();
+			return null;
+		}
+	}//end of generateYearListForReport2
+
+	public static ArrayList<String> generateMonthList(String solution, String component, String year){//generates list of months for Report1
+		try{
+			Connection conn_one = DriverManager_getConnectionHelper(first_param, second_param, third_param);	
+			Statement stmt_one = conn_one.createStatement();
+			ResultSet rs_one;	
+
+			//generate SQL query
+			String Query = "select to_char(metric_start_time, 'mm') from ISPAUDIT.AUDIT_METRIC where solution_id = '";
+			Query += solution;
+			Query += "' and component_id ='";
+			Query += component;
+			Query += "' and METRIC_NAME = 'Daily_Entry_Count' and to_char(METRIC_START_TIME,'yyyy') = '";
+			Query += year; 
+			Query += "' group by to_char(METRIC_START_TIME,'mm')";
+
+			rs_one = stmt_one.executeQuery(Query);
+		
+			ArrayList<String> ListOfMonths = new ArrayList<String>();
+			while ( rs_one.next() ){//getting the list on 'mm' format ex: jun is: 06
+				String add_this = rs_one.getString(1);
+				ListOfMonths.add( add_this);
+			}
+			
+			Collections.sort(ListOfMonths);//sort the numbers that are in 'mm' format
+			return Convert2Month(ListOfMonths);//convert 'mm' format to months
+		}
+		catch (SQLException e){
+			e.printStackTrace();
+			return null;
+		}
+	}//end of generateMonthList
+	
+	public static ArrayList<String> generateMonthList2(String solution, String start_year){//generates list of months for Report2
+		/*
+		SELECT to_char(metric_start_time, 'mm')
+		FROM audit_metric
+		WHERE solution_id = 'S0224_YankeeSOFConfirmServiceESB'
+		AND metric_name = 'Daily_Entry_Count'
+		AND to_char(METRIC_START_TIME, 'yyyy') = '2015'
+		GROUP BY to_char(METRIC_start_TIME, 'mm')
+		ORDER BY to_char(METRIC_start_TIME, 'mm')
+		*/
+		try{
+			Connection conn_one = DriverManager_getConnectionHelper(first_param, second_param, third_param);
+			Statement stmt_one = conn_one.createStatement();
+			ResultSet rs_one;	
+
+			//form sql query
+			String Query = "select to_char(metric_start_time, 'mm') from ISPAUDIT.AUDIT_METRIC where solution_id = '";
+			Query += solution;
+			Query += "' and metric_name = 'Daily_Entry_Count' and to_char(metric_start_time, 'yyyy') = '";
+			Query += start_year;
+			Query += "' group by to_char(metric_start_time, 'mm') order by to_char(metric_start_time, 'mm')";
+
+			rs_one = stmt_one.executeQuery(Query);
+		
+			ArrayList<String> ListOfMonths = new ArrayList<String>();
+			while ( rs_one.next() ){//getting the list in 'mm' format ex: jun is: 06
+				String add_this = rs_one.getString(1);
+				ListOfMonths.add( add_this);
+			}
+			
+			Collections.sort(ListOfMonths);//sort the numbers that are in 'mm' format
+			return Convert2Month(ListOfMonths);//convert 'mm' format to months
+		}
+		catch (SQLException e){
+			e.printStackTrace();
+			return null;
+		}
+	}//end of generateMonthList2
+	
+	public static ArrayList<ReportFive> generateReportFive(String solution, String component, String year, String month){
+		try{
+			Connection conn_one = DriverManager_getConnectionHelper(first_param, second_param, third_param);
+			Statement stmt_one = conn_one.createStatement();
+			ResultSet rs_one;	
+			
+			String Query_one = "select solution_id, component_id, metric_name, metric_start_time, metric_value from ispaudit.audit_metric where solution_id='S0228_CrmInquiryServiceWeb' and metric_name = 'Hourly_Entry_Count' and metric_start_time>='01-JUL-15' and metric_start_time<'02-JUL-15' and component_id = 'getHistory' order by metric_start_time";	
+			rs_one = stmt_one.executeQuery(Query_one);
+			
+			ArrayList<ReportFive> ReportFiveList = new ArrayList<ReportFive>();/*
+			String SOLUTION_ID;
+			String COMPONENT_ID;
+			String HOUR;
+			String ERROR_COUNT;
+			String REQUEST_COUNT;*/
+			int first_counter=0;
+			while( rs_one.next() ){//following loop will go to the last date, ex: 2015-07-01 14:00:00 would go to 14, and the the function after takes it to 23
+				ReportFive tempReportFive = new ReportFive();
+				String temp = rs_one.getString(4);
+				String new_temp = temp.substring(    temp.indexOf(":")-2                   , temp.indexOf(":"));
+//				System.out.println("The thing in front of the : should be" + new_temp);
+//				System.out.println("When parsing into integer, it looks like:" + Integer.parseInt(new_temp));
+				int new_temp2int = Integer.parseInt(new_temp);
+				
+//				System.out.println("first_counter=" + first_counter + " the hour is:" + new_temp2int);
+				if( first_counter != new_temp2int ){
+					for(int i=first_counter; i<new_temp2int; i++){
+						ReportFive adding = new ReportFive();
+						adding.setREQUEST_COUNT("0");
+//						System.out.println("about to add in for loop");
+						ReportFiveList.add(adding);
+					}
+					first_counter = new_temp2int;
+				}
+					first_counter++;
+				
+				String metric_value = rs_one.getString(5);
+//				System.out.println(temp + "        metric_value:" + metric_value);
+				tempReportFive.setREQUEST_COUNT(metric_value);
+//				System.out.println("about to add at bottom");	
+				ReportFiveList.add(tempReportFive);
+			}
+			for(int i=first_counter; i<24; i++){//this takes off from where the first_coutner has left off of
+				ReportFive temp_report_five = new ReportFive();
+				temp_report_five.setREQUEST_COUNT("0");
+				ReportFiveList.add(temp_report_five);
+			}
+						
+			
+			////
+			Connection conn = DriverManager_getConnectionHelper(first_param, second_param, third_param);
+			Statement stmt = conn_one.createStatement();
+			ResultSet rs;	
+			
+			String Query = "select solution_id, component_id, metric_name, metric_start_time, metric_value from ispaudit.audit_metric where solution_id='S0228_CrmInquiryServiceWeb' and metric_name = 'Hourly_Error_Count' and metric_start_time>='01-JUL-15' and metric_start_time<'02-JUL-15' and component_id = 'getHistory' order by metric_start_time ";
+			rs = stmt.executeQuery(Query);
+			int second_counter = 0;
+			String sol = null;
+			String comp = null;
+			while ( rs.next() ){//following loop will go to the last date, ex: 2015-07-01 14:00:00 would go to 14, and the the function after takes it to 23
+				sol = rs.getString(1);
+				comp = rs.getString(2);
+				
+				String temp_date = rs.getString(4);
+				System.out.println("The date is: " + rs.getString(4));
+				String new_temp_date = temp_date.substring( temp_date.indexOf(":")-2 , temp_date.indexOf(":"));
+				
+				int new_temp_date2int = Integer.parseInt(new_temp_date);
+				System.out.println("new_tempdate2int is:" + new_temp_date2int);
+				
+				String error_count = rs.getString(5);
+				System.out.println("error count is:" + error_count);
+				if ( second_counter != new_temp_date2int){
+					for(int i=second_counter; i<new_temp_date2int; i++){
+						ReportFiveList.get(i).setERROR_COUNT("0");
+					}
+					second_counter=new_temp_date2int;
+				}
+				ReportFiveList.get(new_temp_date2int).setERROR_COUNT(error_count);
+				second_counter++;
+			}
+			for(int i=second_counter; i<24; i++){//this takes off from where the first_coutner has left off of
+				ReportFiveList.get(i).setERROR_COUNT("0");
+			}
+			for(int i=0; i<24; i++){
+				ReportFiveList.get(i).setHOUR( String.valueOf(i));
+				ReportFiveList.get(i).setSOLUTION_ID(sol);
+				ReportFiveList.get(i).setCOMPONENT_ID(comp);
+			}
+			
+			
+			
+			conn.close();
+			conn_one.close();
+			
+			return ReportFiveList;
+		}
+		catch (SQLException e){
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	public static ArrayList<ReportFive> generateReportSix(String solution, String component, String year, String month){
+		try {
+			Connection conn_one = DriverManager_getConnectionHelper(first_param, second_param, third_param);
+			Statement stmt_one = conn_one.createStatement();
+			ResultSet rs_one;
+
+			Connection conn_two = DriverManager_getConnectionHelper(first_param, second_param, third_param);
+			Statement stmt = conn_two.createStatement();
+			ResultSet rs;
+		
+			/*
+			String testQuery = "select sum(metric_value) from ispaudit.audit_metric where solution_id='S0228_CrmInquiryServiceWeb' and component_id = 'getHistory' and metric_name = 'Hourly_Error_Count' and metric_start_time>='01-JUL-15' and metric_start_time<'24-JUL-15' and to_char(metric_start_time,'hh24')='02'";
+			rs = stmt_one.executeQuery(testQuery);
+	
+			rs.next();
+			if(rs.getString(1) == null){
+				System.out.println("The VERY FIRST query is null, you should be fine");
+			}
+			else{
+				System.out.println("The VERY FIRST QUERY is:" + rs.getString(1));
+			}*/
+		
+			
+			
+
+			String Query_one = "select solution_id, component_id, metric_name, metric_start_time, metric_value from ispaudit.audit_metric where solution_id='S0228_CrmInquiryServiceWeb' and metric_name = 'Hourly_Entry_Count' and metric_start_time>='";
+			String Query_one_part_two = "-JUL-15' and metric_start_time<'";
+			String Query_one_part_three = "-JUL-15' and component_id = 'getHistory' order by metric_start_time";
+
+			String end_date = TurnToNiceDateEnd("JUL", "2015", stmt_one);
+			String end_date_day = end_date.substring(1, end_date.indexOf("-"));
+			int end_date_day_num = Integer.parseInt(end_date_day);
+
+			int one = 1;
+
+			//			for(int i=1 ; i<end_date_day_num; i++){//this only goes to 31
+			//			for(int i=1 ; i<24; i++){
+			//				String first = new DecimalFormat("00").format(i);
+			//				String second = new DecimalFormat("00").format(i+1);
+			//				String Query_final_one = Query_one + first + Query_one_part_two + second + Query_one_part_three; 
+			//				System.out.println("Da final query is:" + Query_final_one);
+			//			}
+
+			//			rs_one = stmt_one.executeQuery(Query_one);
+
+			ArrayList<ReportFive> ReportFiveList = new ArrayList<ReportFive>();
+			boolean first_time = false;
+
+			String Query_two = "select solution_id, component_id, metric_name, metric_start_time, metric_value from ispaudit.audit_metric where solution_id='S0228_CrmInquiryServiceWeb' and metric_name = 'Hourly_Error_Count' and metric_start_time>='";
+			//					01
+			String Query_two_part_two = "-JUL-15' and metric_start_time<'";
+			//					02
+			String Query_two_part_three = "-JUL-15' and component_id = 'getHistory' order by metric_start_time";
+
+			for (int y = 1; y < 24; y++) {
+				String first = new DecimalFormat("00").format(y);
+				String second = new DecimalFormat("00").format(y + 1);
+				String Query_final_one = Query_one + first + Query_one_part_two + second + Query_one_part_three;
+//								System.out.println("Da final query is:" + Query_final_one);	
+
+				String third = new DecimalFormat("00").format(y);
+				String fourth = new DecimalFormat("00").format(y + 1);
+				String Query_final_two = Query_two + third + Query_two_part_two + fourth + Query_two_part_three;
+//								System.out.println("Da second final query is:" + Query_final_two);	
+
+				////	
+
+				rs_one = stmt_one.executeQuery(Query_final_one);
+
+				if (first_time == false) {
+//					System.out.println("only once");
+					first_time = true;
+					int first_counter = 0;
+					while (rs_one.next()) {//following loop will go to the last date, ex: 2015-07-01 14:00:00 would go to 14, and the the function after takes it to 23
+						ReportFive tempReportFive = new ReportFive();
+						String temp = rs_one.getString(4);
+//						System.out.println("The date is:" + temp);
+						String new_temp = temp.substring(temp.indexOf(":") - 2, temp.indexOf(":"));
+						//					System.out.println("The thing in front of the : should be" + new_temp);
+						//					System.out.println("When parsing into integer, it looks like:" + Integer.parseInt(new_temp));
+						int new_temp2int = Integer.parseInt(new_temp);
+
+						//					System.out.println("first_counter=" + first_counter + " the hour is:" + new_temp2int);
+						if (first_counter != new_temp2int) {
+							for (int i = first_counter; i < new_temp2int; i++) {
+								ReportFive adding = new ReportFive();
+								adding.setREQUEST_COUNT("0");
+								//							System.out.println("about to add in for loop");
+								ReportFiveList.add(adding);
+							}
+							first_counter = new_temp2int;
+						}
+						first_counter++;
+
+						String metric_value = rs_one.getString(5);
+						//					System.out.println(temp + "        metric_value:" + metric_value);
+						tempReportFive.setREQUEST_COUNT(metric_value);
+						//					System.out.println("about to add at bottom");	
+						ReportFiveList.add(tempReportFive);
+					}
+					for (int i = first_counter; i < 24; i++) {//this takes off from where the first_coutner has left off of
+						ReportFive temp_report_five = new ReportFive();
+						temp_report_five.setREQUEST_COUNT("0");
+						ReportFiveList.add(temp_report_five);
+					}
+
+					//////
+
+					//				String Query = "select solution_id, component_id, metric_name, metric_start_time, metric_value from ispaudit.audit_metric where solution_id='S0228_CrmInquiryServiceWeb' and metric_name = 'Hourly_Error_Count' and metric_start_time>='01-JUL-15' and metric_start_time<'02-JUL-15' and component_id = 'getHistory' order by metric_start_time ";
+					rs = stmt.executeQuery(Query_final_two);
+					int second_counter = 0;
+					String sol = null;
+					String comp = null;
+					while (rs.next()) {//following loop will go to the last date, ex: 2015-07-01 14:00:00 would go to 14, and the the function after takes it to 23
+						sol = rs.getString(1);
+						comp = rs.getString(2);
+
+						String temp_date = rs.getString(4);
+						//					System.out.println("The date is: " + rs.getString(4));
+						String new_temp_date = temp_date.substring(temp_date.indexOf(":") - 2, temp_date.indexOf(":"));
+
+						int new_temp_date2int = Integer.parseInt(new_temp_date);
+						//					System.out.println("new_tempdate2int is:" + new_temp_date2int);
+
+						String error_count = rs.getString(5);
+						//					System.out.println("error count is:" + error_count);
+						if (second_counter != new_temp_date2int) {
+							for (int i = second_counter; i < new_temp_date2int; i++) {
+								ReportFiveList.get(i).setERROR_COUNT("0");
+							}
+							second_counter = new_temp_date2int;
+						}
+						ReportFiveList.get(new_temp_date2int).setERROR_COUNT(error_count);
+						second_counter++;
+					}
+					for (int i = second_counter; i < 24; i++) {//this takes off from where the first_coutner has left off of
+						ReportFiveList.get(i).setERROR_COUNT("0");
+					}
+					for (int i = 0; i < 24; i++) {
+						ReportFiveList.get(i).setHOUR(String.valueOf(i));
+						ReportFiveList.get(i).setSOLUTION_ID(sol);
+						ReportFiveList.get(i).setCOMPONENT_ID(comp);
+					}
+				}
+				else {//not the first time
+
+					while (rs_one.next()) {//following loop will go to the last date, ex: 2015-07-01 14:00:00 would go to 14, and the the function after takes it to 23
+						String temp = rs_one.getString(4);
+						String new_temp = temp.substring(temp.indexOf(":") - 2, temp.indexOf(":"));
+
+						//						System.out.println("The thing in front of the : should be" + new_temp);
+						//						System.out.println("When parsing into integer, it looks like:" + Integer.parseInt(new_temp));
+						int new_temp2int = Integer.parseInt(new_temp);
+
+						String metric_value = rs_one.getString(5);
+						//						System.out.println(temp + "        metric_value:" + metric_value);
+
+						String old_request_count = ReportFiveList.get(new_temp2int).getREQUEST_COUNT();
+						int old_request_count_integer = Integer.parseInt(old_request_count);
+						int metric_value_integer = Integer.parseInt(metric_value);
+						int new_request_count = old_request_count_integer + metric_value_integer;
+						String metric_value_string = String.valueOf(new_request_count);
+
+						ReportFiveList.get(new_temp2int).setREQUEST_COUNT(metric_value_string);
+						//						tempReportFive.setREQUEST_COUNT(metric_value);
+						//						System.out.println("about to add at bottom");	
+						//						ReportFiveList.add(tempReportFive);
+					}
+
+					////////error count below
+
+					//					String Query = "select solution_id, component_id, metric_name, metric_start_time, metric_value from ispaudit.audit_metric where solution_id='S0228_CrmInquiryServiceWeb' and metric_name = 'Hourly_Error_Count' and metric_start_time>='01-JUL-15' and metric_start_time<'02-JUL-15' and component_id = 'getHistory' order by metric_start_time ";
+					rs = stmt.executeQuery(Query_final_two);
+					while (rs.next()) {//following loop will go to the last date, ex: 2015-07-01 14:00:00 would go to 14, and the the function after takes it to 23
+
+						String temp_date = rs.getString(4);
+						//						System.out.println("The date is: " + rs.getString(4));
+						String new_temp_date = temp_date.substring(temp_date.indexOf(":") - 2, temp_date.indexOf(":"));
+
+						int new_temp_date2int = Integer.parseInt(new_temp_date);
+						//						System.out.println("new_tempdate2int is:" + new_temp_date2int);
+
+						String error_count = rs.getString(5);
+						int error_count_num = Integer.parseInt(error_count);
+
+						//						System.out.println("error count is:" + error_count);
+
+						String old_error_count_string = ReportFiveList.get(new_temp_date2int).getERROR_COUNT();
+						int old_error_count_num = Integer.parseInt(old_error_count_string);
+
+						int new_error_count_num = old_error_count_num + error_count_num;
+						String new_error_count_string = String.valueOf(new_error_count_num);
+
+						ReportFiveList.get(new_temp_date2int).setERROR_COUNT(new_error_count_string);
+					}//end of else-error
+				}//end of else
+			}//end of for loop tha loops through 24 querijes
+
+			conn_one.close();
+			conn_two.close();
+
+			return ReportFiveList;
+		}
+		catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	public static ArrayList<ReportFive> generateReportSeven(String solution, String component, String year, String month){
+		try {
+			Connection conn_one = DriverManager_getConnectionHelper(first_param, second_param, third_param);
+			Statement stmt_one = conn_one.createStatement();
+			ResultSet rs_count;
+
+			Connection conn_two = DriverManager_getConnectionHelper(first_param, second_param, third_param);
+			Statement stmt_two = conn_two.createStatement();
+			ResultSet rs_error;
+	
+			//metric_start_time>='01-JUL-15' and metric_start_time<'24-JUL-15'
+			String ErrorQuery = "select sum(metric_value) from ispaudit.audit_metric where solution_id='S0228_CrmInquiryServiceWeb' and component_id = 'getHistory' and metric_name = 'Hourly_Error_Count' and metric_start_time>='01-JUL-15' and metric_start_time<'24-JUL-15' and to_char(metric_start_time,'hh24')='";
+			String CountQuery = "select sum(metric_value) from ispaudit.audit_metric where solution_id='S0228_CrmInquiryServiceWeb' and component_id = 'getHistory' and metric_name = 'Hourly_Entry_Count' and metric_start_time>='01-JUL-15' and metric_start_time<'24-JUL-15' and to_char(metric_start_time,'hh24')='";
+			String sol = "S0228_CrmInquiryServiceWeb";
+			String comp = "getHistory";
+					
+			ArrayList<ReportFive> ReportFiveList = new ArrayList<ReportFive>();	
+			
+			for(int i=0; i<24; i++){
+				String two_decimal_format = new DecimalFormat("00").format(i);
+				String hour = two_decimal_format + "'";
+				
+				String CompleteErrorQuery = ErrorQuery + hour;
+				String CompleteCountQuery = CountQuery + hour;
+				
+//				System.out.println("the 1st query is:" + CompleteErrorQuery);
+//				System.out.println("the 2nd query is:" + CompleteCountQuery);
+			
+				rs_count = stmt_one.executeQuery(CompleteCountQuery);
+				rs_count.next();
+				String request_count = rs_count.getString(1);
+				
+				ReportFive ReportFiveBean = new ReportFive();
+				if( request_count != null){//then just add request count
+					ReportFiveBean.setREQUEST_COUNT(request_count);
+//					System.out.println("Added bean #" + i + ", with a request count of " + request_count);
+					ReportFiveList.add(ReportFiveBean);
+				}
+				else{//then just add a request count of zero
+					ReportFiveBean.setREQUEST_COUNT("0");
+//					System.out.println("Added bean #" + i + ", with a request count of 0");
+					ReportFiveList.add(ReportFiveBean);
+				}
+				
+				
+				rs_error = stmt_one.executeQuery(CompleteErrorQuery);
+				rs_error.next();
+				String error_count = rs_error.getString(1);
+				
+				if( error_count != null){//the error count does not equal 0
+					ReportFiveList.get(i).setERROR_COUNT(error_count);
+//					System.out.println("bean #" + i + ", has an error count of" + error_count);
+				}
+				else{//the error count is 0
+					ReportFiveList.get(i).setERROR_COUNT("0");
+//					System.out.println("bean #" + i + ", has an error count of 0");
+				}
+				
+				int est_time = (i - 4);
+				if(est_time<0){
+					est_time+=12;
+				}
+				est_time=est_time%12;
+			
+				String actual_est_time = null;
+				if(i>=0&&i<=3 || i>=16&&i<=23){//add the pm extension, 
+					if(i==16){
+						actual_est_time = "12pm";
+					}
+					else{
+						actual_est_time = String.valueOf(est_time)+"pm";
+					}
+				}
+				else{
+					if(i==4){
+						actual_est_time = "12am";
+					}
+					else{
+						actual_est_time = String.valueOf(est_time)+"am";
+					}
+				}
+				
+				System.out.println("Originally i is:" + i + ", and the actual_est_time will be:" + actual_est_time);
+				ReportFiveList.get(i).setHOUR(actual_est_time);
+				ReportFiveList.get(i).setSOLUTION_ID(sol);
+				ReportFiveList.get(i).setCOMPONENT_ID(comp);
+				
+			}
+			
+			conn_one.close();
+			conn_two.close();
+			return ReportFiveList;
+		}
+		catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	public static ArrayList<ReportOne> generateReportOne(String solution_id, String component_id, String year_start, String month_start){
+		try{
+			Connection conn_one = DriverManager_getConnectionHelper(first_param, second_param, third_param);
+			Statement stmt_one = conn_one.createStatement();
+			ResultSet rs_one;	
+			
+			String NiceDate_one = TurnToNiceDateStart(month_start, year_start);//returns a  date in this format, including the ', ('01-JAN-2015')
+
+			String Query_one = CreateSqlQueryReport1(solution_id, component_id, NiceDate_one);//calls helper function to create the SQL query
+			rs_one = stmt_one.executeQuery(Query_one);
+
+			ArrayList<ReportOne> ReportOneList = new ArrayList<ReportOne>();
+			while (rs_one.next()) {
+				ReportOne tempReportOne = new ReportOne();
+				tempReportOne.setSOLUTION_ID(rs_one.getString(1));
+				tempReportOne.setCOMPONENT_ID(rs_one.getString(2));
+				tempReportOne.setDATE(rs_one.getString(3));
+				tempReportOne.setREQUEST_COUNT(rs_one.getString(4));
+
+				ReportOneList.add(tempReportOne);
+			}
+		
+			conn_one.close();
+			return ReportOneList;
+		}
+		catch (SQLException e){
+			e.printStackTrace();
+			return null;
+		}
+	}//end of generateReportOne
+	
+public static ArrayList<ReportTwo> generateReportTwo(String solution, String year_start, String month_start, String year_end, String month_end){
+		try{
+			Connection conne = DriverManager_getConnectionHelper(first_param, second_param, third_param);
+			Statement stmt = conne.createStatement();
+			ResultSet rs;
+
+			String StartDate = TurnToNiceDateStart(month_start, year_start);//returns a  date in this format, including the ', ('01-JAN-2015')
+			String EndDate = TurnToNiceDateEnd(month_end, year_end, stmt);//returns a  date in this format, including the ', ('01-JAN-2015')
+ 
+			String Query = CreateSqlQueryReport2(solution, StartDate, EndDate);//calls helper function to create the SQL query
+			rs = stmt.executeQuery(Query);
+
+			//populating reportOneList
+			ArrayList<ReportTwo> TwoList = new ArrayList<ReportTwo>();
+			while (rs.next()) {
+				ReportTwo tempReportTwo = new ReportTwo();
+				tempReportTwo.setSOLUTION_ID(rs.getString(1));
+				tempReportTwo.setDATE(rs.getString(2));
+				tempReportTwo.setREQUEST_COUNT(rs.getString(3));
+				TwoList.add(tempReportTwo); //added it to the big list
+			}
+	
+			conne.close();
+			return TwoList;
+		}
+		catch (SQLException e){
+			e.printStackTrace(); 
+			return null;
+		}
+	}//end of generateReportTwo less parameters
+
+public static ArrayList<ReportThree> generateReportThree(String solution, String component, String start_date, String end_date){
+	try{
+		Connection conne = DriverManager_getConnectionHelper(first_param, second_param, third_param);
+		Statement stmt = conne.createStatement();
+		ResultSet rs;
+				
+		Connection conn = DriverManager_getConnectionHelper(first_param, second_param, third_param);
+		Statement statement = conn.createStatement();
+		ResultSet find_count;
+	
+		
+//		System.out.println("solution is:" + solution + " component is:" + component + "start_date is:" + start_date + " and end date is:" + end_date);
+	
+		String Query = "select solution_id, component_id, metric_name, metric_start_time, metric_value from ispaudit.audit_metric where solution_id='S0228_CrmInquiryServiceWeb' and metric_name = 'Daily_Error_Count' and metric_start_time>='01-JUL-15' and component_id = 'getHistory' order by metric_start_time";
+		rs = stmt.executeQuery(Query);
+		
+		String Query2 = "select solution_id, component_id, metric_name, metric_start_time, metric_value from ispaudit.audit_metric where solution_id='S0228_CrmInquiryServiceWeb' and metric_name = 'Daily_Entry_Count' and metric_start_time='";
+//		01-JUL-15' and component_id = 'getHistory' order by metric_start_time";
+
+
+		
+		ArrayList<ReportThree> ThreeList = new ArrayList<ReportThree>();	
+		while ( rs.next() ){
+			ReportThree tempReportThree = new ReportThree();
+			tempReportThree.setSOLUTION_ID(rs.getString(1));
+			String date = rs.getString(4);
+			tempReportThree.setCOMPONENT_ID(rs.getString(2));
+			
+			String new_date = TakeOffZeroes(date);
+			tempReportThree.setDATE(new_date);
+			
+			tempReportThree.setERROR_COUNT(rs.getString(5));
+			
+//			System.out.println("how many times?");
+			String Query2_temp = "' and component_id = 'getHistory'";
+			String Actual_Query = Query2 + new_date + Query2_temp;
+//			System.out.println("The query is:" + Actual_Query);
+			find_count = statement.executeQuery(Actual_Query);
+			find_count.next();
+			String total_count = find_count.getString(5);
+			tempReportThree.setREQUEST_COUNT(total_count);
+						
+			ThreeList.add(tempReportThree);
+		}
+		
+		conn.close();
+		conne.close();
+		return ThreeList;
+	
+		
+		
+		
+		
+	}
+	catch (SQLException e){
+		e.printStackTrace();
+		return null;
+	}
+}
+
+public static ArrayList<ReportFour> generateReportFour(String solution, String component, String start_date, String end_date){
+	try{
+		Connection conne = DriverManager_getConnectionHelper(first_param, second_param, third_param);
+		Statement stmt = conne.createStatement();
+		ResultSet rs_entry;
+				
+		Connection conn = DriverManager_getConnectionHelper(first_param, second_param, third_param);
+		Statement statement = conn.createStatement();
+		ResultSet rs_error;
+		
+	
+		String QueryError = "select solution_id, component_id, metric_name, metric_start_time, metric_value from ispaudit.audit_metric where solution_id='S0228_CrmInquiryServiceWeb' and metric_name = 'Daily_Error_Count' and metric_start_time='";
+		String QueryError1 ="-JUL-15' and component_id = 'getHistory' order by metric_start_time";
+		
+		String QueryEntry ="select solution_id, component_id, metric_name, metric_start_time, metric_value from ispaudit.audit_metric where solution_id='S0228_CrmInquiryServiceWeb' and metric_name = 'Daily_Entry_Count' and metric_start_time='";
+		String QueryEntry1 = "-JUL-15' and component_id = 'getHistory' order by metric_start_time";
+		
+		
+//		rs_entry =stmt.executeQuery(QueryEntry);
+//		01-JUL-15' and component_id = 'getHistory' order by metric_start_time";
+		ArrayList<ReportFour> FourList = new ArrayList<ReportFour>();	
+		
+		int end = 27;
+		for (int i = 1; i<end; i++){
+			String Final_Query_Error = QueryError + i + QueryError1 ;
+			String Final_Query_Entry = QueryEntry + i + QueryEntry1 ;
+			
+			rs_entry = stmt.executeQuery(Final)
+			
+			
+			
+			
+			
+			
+			
+			
+		}
+		
+		
+		
+		
+		return FourList;
+	}
+	catch (SQLException e){
+		e.printStackTrace();
+		return null;
+	}
+}
+
+/*
+	15:25:10,413 INFO  [STDOUT] The date is:2015-07-06 00:00:00
+	15:25:10,413 INFO  [STDOUT] The new Date is now: 2015-07-06
+	
+	look like this: 06-JUL-15
+*/
+private static String TakeOffZeroes(String Date){
+	int index_of_space = Date.indexOf(" ");
+	String new_date = Date.substring(0, index_of_space);
+	
+	int year_index= new_date.indexOf("-");
+	String year = new_date.substring(2, year_index);
+//	System.out.println("the new year is:" + year);
+	
+	int day_index = new_date.lastIndexOf("-");
+	String day = new_date.substring(day_index+1, new_date.length());
+//	System.out.println("the new day is:" + day);
+	
+
+	int month_index = new_date.indexOf("-");
+	String month = new_date.substring(month_index+1, new_date.lastIndexOf("-"));
+//	System.out.println("new month is now: " + month);
+	
+	ArrayList<String> Just1Month = new ArrayList<String>();
+	Just1Month.add(month);
+	ArrayList<String> TempList = Convert2Month(Just1Month);//convert to actual month
+	String new_month = TempList.get(0);
+	
+	String return_this = day + "-" + new_month + "-" + year;
+	
+//	System.out.println("The new Date is now: " + return_this);
+	
+	
+	return return_this;
+}
+
+   	private static ArrayList<String> GrabDistinctSolutionList(String Query, Statement stmt) {//helper function to grab list of solution_ids 
+		try {
+			ResultSet rs_loop = stmt.executeQuery(Query);
+			ArrayList<String> Temp = new ArrayList<String>();
+			
+			while (rs_loop.next()) {
+				String tempString = rs_loop.getString(1);
+				if (tempString != null) {
+					Temp.add(tempString);
+				}
+			}
+			Collections.sort(Temp, String.CASE_INSENSITIVE_ORDER);//sort the solution ids
+			return Temp;
+		}
+		catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}//end of GrabDistinctForColumns
+
+   	//helper function
+	private static String TurnToNiceDateStart(String month, String year) {
+		// Given a month and year, it will turn into this format, ex:
+		// '01-JAN-2015'
+		String NiceDate = "'01-";
+		NiceDate += month;
+		NiceDate += "-";
+		NiceDate += year;
+		NiceDate += "'";
+		return NiceDate;
+	}
+
+	//helper function
+	private static String TurnToNiceDateEnd(String month, String year, Statement stmt) {
+		// Given a month and year, it will turn into this format, ex:
+		// '01-JAN-2015'
+
+//		SELECT unique(LAST_DAY('1-Jun-2015')) from audit_metric 
+		String Query = "SELECT unique(LAST_DAY('1-";
+		Query += month + "-";
+		Query += year +"'";
+		Query += ")) from ISPAUDIT.AUDIT_METRIC";
+		
+		try{
+			String result = null;
+			ResultSet rs = stmt.executeQuery(Query);
+			while (rs.next()){
+				result = rs.getString(1);
+				//the result is in this example format:'2015-06-30 00:00:00'
+			}
+			
+			//Now that you have the last date of the corresponding month and year, just concatenate
+			String day = result.substring(result.lastIndexOf("-")+1, result.indexOf(" "));
+			String NiceDate = "'"  + day + "-" + month + "-" + year + "'";
+			return NiceDate;
+		}
+		catch(SQLException e){
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	//helper functions
+	private static String CreateSqlQueryReport1(String Solution_id, String Component_id, String NiceDate) { // NiceDate is in '01-JAN-2015' format
+		/*
+		 * select SOLUTION_ID, COMPONENT_ID, to_char(METRIC_END_TIME,'yyyy-mm')
+		 * as MONTH, sum(METRIC_VALUE) as REQUEST_COUNT from AUDIT_METRIC where
+		 * METRIC_START_TIME >= '01-JAN-2015' and METRIC_END_TIME <= (SYSDATE)
+		 * and SOLUTION_ID = 'S0228_CrmInquiryServiceWeb' and COMPONENT_ID =
+		 * 'getHistory' and METRIC_NAME = 'Daily_Entry_Count' group by
+		 * SOLUTION_ID, COMPONENT_ID, to_char(METRIC_END_TIME,'yyyy-mm') order
+		 * by SOLUTION_ID, COMPONENT_ID, to_char(METRIC_END_TIME,'yyyy-mm')
+		 */
+		String SqlQuery = "select SOLUTION_ID, COMPONENT_ID, to_char(METRIC_END_TIME,'yyyy-mm') as MONTH, sum(METRIC_VALUE) as REQUEST_COUNT from ISPAUDIT.AUDIT_METRIC";
+		SqlQuery += " where METRIC_START_TIME >= ";
+		SqlQuery += NiceDate;// add the start date
+		SqlQuery += " and METRIC_END_TIME <= (SYSDATE) and SOLUTION_ID = '";
+		SqlQuery += Solution_id; //add the solution id
+		SqlQuery += "' and COMPONENT_ID = '";
+		SqlQuery += Component_id; // add the component id
+		SqlQuery += "' and METRIC_NAME = 'Daily_Entry_Count' group by SOLUTION_ID, COMPONENT_ID, to_char(METRIC_END_TIME,'yyyy-mm') order by";
+		SqlQuery += " SOLUTION_ID, COMPONENT_ID, to_char(METRIC_END_TIME,'yyyy-mm')";
+		return SqlQuery;
+	}
+
+	//helper function
+	private static String CreateSqlQueryReport2(String Solution_id, String NiceDate_start, String NiceDate_end) { // NiceDate is in '01-JAN-2015' format
+		/* REPORT TWO
+		select SOLUTION_ID, to_char(METRIC_END_TIME,'yyyy-mm') as MONTH, sum(METRIC_VALUE) as REQUEST_COUNT
+		from AUDIT_METRIC
+		where METRIC_START_TIME >= '01-JAN-2014'
+		and METRIC_END_TIME <= '31-DEC-2014'
+		and SOLUTION_ID = 'S0228_CrmInquiryServiceWeb'
+		and METRIC_NAME = 'Daily_Entry_Count'
+		group by SOLUTION_ID, to_char(METRIC_END_TIME,'yyyy-mm')
+		order by SOLUTION_ID, to_char(METRIC_END_TIME,'yyyy-mm');
+		*/
+
+		String SqlQuery = "select SOLUTION_ID, to_char(METRIC_END_TIME,'yyyy-mm') as MONTH, sum(METRIC_VALUE) as REQUEST_COUNT from ISPAUDIT.AUDIT_METRIC";
+		SqlQuery += " where METRIC_START_TIME >= ";
+		SqlQuery += NiceDate_start; // add the start date
+		SqlQuery += " and METRIC_END_TIME <= ";
+		SqlQuery += NiceDate_end; //add the end date
+		SqlQuery += " and SOLUTION_ID = '";
+		SqlQuery += Solution_id; //add the solution id
+		SqlQuery += "' and METRIC_NAME = 'Daily_Entry_Count' group by SOLUTION_ID, to_char(METRIC_END_TIME,'yyyy-mm') order by";
+		SqlQuery += " SOLUTION_ID, to_char(METRIC_END_TIME,'yyyy-mm')";
+		return SqlQuery;
+	}
+	
+	private static ArrayList<String> Convert2Month(ArrayList<String> ListOfMonths){//converts an array of Strings of numbers to their corresponding months
+		ArrayList<String> ReturnThis = new ArrayList<String>();
+		for (int i = 0; i < ListOfMonths.size(); i++) {
+			if (ListOfMonths.get(i).equals("01")) {
+				ReturnThis.add("JAN");
+			}
+			else if (ListOfMonths.get(i).equals("02")) {
+				ReturnThis.add("FEB");
+			}
+			else if (ListOfMonths.get(i).equals("03")) {
+				ReturnThis.add("MAR");
+			}
+			else if (ListOfMonths.get(i).equals("04")) {
+				ReturnThis.add("APR");
+			}
+			else if (ListOfMonths.get(i).equals("05")) {
+				ReturnThis.add("MAY");
+			}
+			else if (ListOfMonths.get(i).equals("06")) {
+				ReturnThis.add("JUN");
+			}
+			else if (ListOfMonths.get(i).equals("07")) {
+				ReturnThis.add("JUL");
+			}
+			else if (ListOfMonths.get(i).equals("08")) {
+				ReturnThis.add("AUG");
+			}
+			else if (ListOfMonths.get(i).equals("09")) {
+				ReturnThis.add("SEP");
+			}
+			else if (ListOfMonths.get(i).equals("10")) {
+				ReturnThis.add("OCT");
+			}
+			else if (ListOfMonths.get(i).equals("11")) {
+				ReturnThis.add("NOV");
+			}
+			else {
+				ReturnThis.add("DEC");
+			}
+		}//end of for loop
+		return ReturnThis;
+	}//end of function
+	
+}
